@@ -1,0 +1,1 @@
+# lastfm-discord-rpc
