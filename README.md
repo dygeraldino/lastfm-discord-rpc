@@ -21,7 +21,14 @@ A robust background daemon that syncs your currently playing track from Last.fm 
 
 ```bash
 pip install -r requirements.txt
+
+# Linux / macOS / Git Bash
 cp .env.example .env
+
+# Windows (CMD / PowerShell)
+copy .env.example .env
+# or in PowerShell: Copy-Item .env.example .env
+
 # Edit .env with your credentials
 ```
 
@@ -89,7 +96,11 @@ src/
 ## Testing
 
 ```bash
+# Using pytest directly
 pytest tests/ -v
+
+# Or via Python launcher (Windows)
+py -m pytest tests/ -v
 ```
 
 ## Logging
