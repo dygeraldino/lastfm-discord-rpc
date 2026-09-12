@@ -112,8 +112,17 @@ class LastFmClient(MusicProvider):
                 return None
 
             title = track_data.get("name", "")
-            artist = track_data.get("artist", {}).get("#text", "") if isinstance(track_data.get("artist"), dict) else track_data.get("artist", "")
-            album = track_data.get("album", {}).get("#text", "") if isinstance(track_data.get("album"), dict) else track_data.get("album", "")
+            raw_artist = track_data.get("artist", "")
+            if isinstance(raw_artist, dict):
+                artist = raw_artist.get("#text") or raw_artist.get("name", "")
+            else:
+                artist = str(raw_artist)
+
+            raw_album = track_data.get("album", "")
+            if isinstance(raw_album, dict):
+                album = raw_album.get("#text") or raw_album.get("name", "")
+            else:
+                album = str(raw_album)
 
             artwork_url = ""
             images = track_data.get("image", [])

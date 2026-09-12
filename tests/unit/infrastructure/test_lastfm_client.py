@@ -50,6 +50,34 @@ class TestLastFmClient:
         assert result is None
 
     @pytest.mark.asyncio
+    async def test_get_current_track_parses_artist_name_key(self, client):
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "recenttracks": {
+                "track": [{
+                    "name": "Mimos",
+                    "artist": {"name": "Test Artist Name"},
+                    "album": {"name": "Test Album Name"},
+                    "image": [],
+                    "@attr": {"nowplaying": "true"},
+                }]
+            }
+        }
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_http = AsyncMock()
+            mock_http.get.return_value = mock_response
+            mock_get_client.return_value = mock_http
+
+            result = await client.get_current_track()
+
+        assert result is not None
+        assert result.title == "Mimos"
+        assert result.artist == "Test Artist Name"
+        assert result.album == "Test Album Name"
+        assert result.is_playing is True
+
+    @pytest.mark.asyncio
     async def test_get_current_track_returns_track_when_playing(self, client):
         mock_response = MagicMock()
         mock_response.json.return_value = {
