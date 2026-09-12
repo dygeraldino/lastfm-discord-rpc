@@ -1,12 +1,22 @@
 import sys
+import os
 from pathlib import Path
 from loguru import logger
 from config.settings import settings
 
 
+def _get_log_dir() -> Path:
+    appdata = os.getenv("APPDATA", "")
+    if appdata:
+        log_dir = Path(appdata) / "LastfmPresence" / "logs"
+    else:
+        log_dir = Path(__file__).parent.parent / "logs"
+    log_dir.mkdir(parents=True, exist_ok=True)
+    return log_dir
+
+
 def setup_logging() -> None:
-    log_dir = Path(__file__).parent.parent / "logs"
-    log_dir.mkdir(exist_ok=True)
+    log_dir = _get_log_dir()
 
     logger.remove()
 
@@ -41,3 +51,7 @@ def setup_logging() -> None:
 
 def get_logger(name: str):
     return logger.bind(name=name)
+
+
+def get_logs_dir() -> Path:
+    return _get_log_dir()
