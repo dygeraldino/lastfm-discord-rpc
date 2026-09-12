@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Optional
 
@@ -11,6 +11,7 @@ class Track:
     artwork_url: str = ""
     is_playing: bool = False
     timestamp: Optional[datetime] = None
+    button_urls: list[tuple[str, str]] = field(default_factory=list)
 
     def __hash__(self) -> int:
         return hash((self.title, self.artist, self.album, self.is_playing))

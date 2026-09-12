@@ -25,6 +25,21 @@ class TestDiscordRpcPublisher:
             timestamp=datetime(2024, 1, 1, 12, 0, 0),
         )
 
+    @pytest.fixture
+    def sample_track_with_buttons(self):
+        return Track(
+            title="Come Together",
+            artist="The Beatles",
+            album="Abbey Road",
+            artwork_url="https://example.com/art.jpg",
+            is_playing=True,
+            timestamp=datetime(2024, 1, 1, 12, 0, 0),
+            button_urls=[
+                ("Listen on Last.fm", "https://www.last.fm/music/The%20Beatles/_/Come%20Together"),
+                ("View Artist", "https://www.last.fm/music/The%20Beatles"),
+            ],
+        )
+
     @pytest.mark.asyncio
     async def test_connect_success(self, publisher):
         with patch("src.infrastructure.publishers.discord_rpc.Presence") as mock_presence_class:
@@ -141,3 +156,59 @@ class TestDiscordRpcPublisher:
         await publisher.clear()
 
         assert publisher._connected is False
+
+    @pytest.mark.asyncio
+    async def test_update_sends_buttons_when_enabled(self, publisher, sample_track_with_buttons):
+        mock_client = MagicMock()
+        publisher._client = mock_client
+        publisher._connected = True
+
+        with patch("src.infrastructure.publishers.discord_rpc.settings") as mock_settings:
+            mock_settings.enable_rich_presence_buttons = True
+
+            await publisher.update(sample_track_with_buttons)
+
+        mock_client.update.assert_called_once()
+        call_kwargs = mock_client.update.call_args.kwargs
+        assert "buttons" in call_kwargs
+        assert len(call_kwargs["buttons"]) == 2
+        assert call_kwargs["buttons"][0]["label"] == "Listen on Last.fm"
+        assert call_kwargs["buttons"][0]["url"] == "https://www.last.fm/music/The%20Beatles/_/Come%20Together"
+        assert call_kwargs["buttons"][1]["label"] == "View Artist"
+        assert call_kwargs["buttons"][1]["url"] == "https://www.last.fm/music/The%20Beatles"
+
+    @pytest.mark.asyncio
+    async def test_update_does_not_send_buttons_when_disabled(self, publisher, sample_track_with_buttons):
+        mock_client = MagicMock()
+        publisher._client = mock_client
+        publisher._connected = True
+
+        with patch("src.infrastructure.publishers.discord_rpc.settings") as mock_settings:
+            mock_settings.enable_rich_presence_buttons = False
+
+            await publisher.update(sample_track_with_buttons)
+
+        mock_client.update.assert_called_once()
+        call_kwargs = mock_client.update.call_args.kwargs
+        assert "buttons" not in call_kwargs
+
+    @pytest.mark.asyncio
+    async def test_update_sends_buttons_without_artwork(self, publisher):
+        track = Track(
+            title="Song",
+            artist="Artist",
+            is_playing=True,
+            button_urls=[("Listen", "https://example.com")],
+        )
+        mock_client = MagicMock()
+        publisher._client = mock_client
+        publisher._connected = True
+
+        with patch("src.infrastructure.publishers.discord_rpc.settings") as mock_settings:
+            mock_settings.enable_rich_presence_buttons = True
+
+            await publisher.update(track)
+
+        call_kwargs = mock_client.update.call_args.kwargs
+        assert "buttons" in call_kwargs
+        assert len(call_kwargs["buttons"]) == 1

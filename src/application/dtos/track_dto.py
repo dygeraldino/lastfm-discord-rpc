@@ -12,6 +12,7 @@ class TrackDTO(BaseModel):
     artwork_url: str = ""
     is_playing: bool = False
     timestamp: Optional[datetime] = None
+    button_urls: list[tuple[str, str]] = []
 
     @property
     def hash_key(self) -> str:
@@ -26,6 +27,7 @@ class TrackDTO(BaseModel):
             artwork_url=self.artwork_url,
             is_playing=self.is_playing,
             timestamp=self.timestamp,
+            button_urls=self.button_urls,
         )
 
 
@@ -37,4 +39,5 @@ def track_to_dto(track: "Track") -> TrackDTO:
         artwork_url=track.artwork_url,
         is_playing=track.is_playing,
         timestamp=track.timestamp,
+        button_urls=track.button_urls,
     )

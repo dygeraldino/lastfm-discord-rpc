@@ -168,3 +168,48 @@ class TestLastFmClient:
     async def test_close_does_nothing_if_client_none(self, client):
         client._client = None
         await client.close()
+
+    def test_build_lastfm_urls_encodes_special_characters(self, client):
+        buttons = client._build_lastfm_urls("AC/DC", "Highway to Hell")
+        assert len(buttons) == 2
+        assert buttons[0][0] == "Listen on Last.fm"
+        assert "AC%2FDC" in buttons[0][1]
+        assert "Highway%20to%20Hell" in buttons[0][1]
+        assert buttons[1][0] == "View Artist"
+        assert "AC%2FDC" in buttons[1][1]
+
+    def test_build_lastfm_urls_unicode_characters(self, client):
+        buttons = client._build_lastfm_urls("Björk", "Jóga")
+        assert "Bj%C3%B6rk" in buttons[0][1]
+        assert "J%C3%B3ga" in buttons[0][1]
+
+    @pytest.mark.asyncio
+    async def test_get_current_track_includes_button_urls(self, client):
+        mock_response = MagicMock()
+        mock_response.json.return_value = {
+            "recenttracks": {
+                "track": [{
+                    "name": "Come Together",
+                    "artist": {"#text": "The Beatles"},
+                    "album": {"#text": "Abbey Road"},
+                    "image": [{"size": "extralarge", "#text": "cover.jpg"}],
+                    "@attr": {"nowplaying": "true"},
+                    "date": {"uts": "1704115200"},
+                }]
+            }
+        }
+
+        with patch.object(client, "_get_client") as mock_get_client:
+            mock_http = AsyncMock()
+            mock_http.get.return_value = mock_response
+            mock_get_client.return_value = mock_http
+
+            result = await client.get_current_track()
+
+        assert result is not None
+        assert len(result.button_urls) == 2
+        assert result.button_urls[0][0] == "Listen on Last.fm"
+        assert "The%20Beatles" in result.button_urls[0][1]
+        assert "Come%20Together" in result.button_urls[0][1]
+        assert result.button_urls[1][0] == "View Artist"
+        assert "The%20Beatles" in result.button_urls[1][1]

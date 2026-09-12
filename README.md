@@ -10,6 +10,7 @@ A robust background daemon that syncs your currently playing track from Last.fm 
 - **Graceful Shutdown** - Handles SIGINT/SIGTERM, clears Discord presence on exit
 - **Structured Logging** - Loguru with daily rotation, separate error logs
 - **Type Safety** - Full type hints, Pydantic validation
+- **Rich Presence Buttons** - "Listen on Last.fm" & "View Artist" buttons with URL encoding
 
 ## Requirements
 
@@ -42,7 +43,19 @@ LASTFM_USERNAME=your_lastfm_username
 DISCORD_CLIENT_ID=your_discord_application_client_id
 POLL_INTERVAL=30
 LOG_LEVEL=INFO
+ENABLE_RICH_PRESENCE_BUTTONS=true
 ```
+
+### Configuration Options
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `LASTFM_API_KEY` | *required* | Your Last.fm API key |
+| `LASTFM_USERNAME` | *required* | Your Last.fm username |
+| `DISCORD_CLIENT_ID` | *required* | Discord Application Client ID |
+| `POLL_INTERVAL` | `30` | Seconds between Last.fm polls |
+| `LOG_LEVEL` | `INFO` | Log level (DEBUG, INFO, WARNING, ERROR) |
+| `ENABLE_RICH_PRESENCE_BUTTONS` | `true` | Show "Listen on Last.fm" and "View Artist" buttons in Discord |
 
 ### Getting Credentials
 

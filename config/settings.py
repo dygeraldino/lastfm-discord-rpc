@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     discord_client_id: str = ""
     poll_interval: int = 30
     log_level: str = "INFO"
+    enable_rich_presence_buttons: bool = True
 
     @property
     def lastfm_base_url(self) -> str:

@@ -90,6 +90,12 @@ class DiscordRpcPublisher(PresencePublisher):
             kwargs["large_image"] = large_image
             kwargs["large_text"] = large_text
 
+        if settings.enable_rich_presence_buttons and track.button_urls:
+            kwargs["buttons"] = [
+                {"label": label[:32], "url": url}
+                for label, url in track.button_urls[:2]
+            ]
+
         await asyncio.to_thread(lambda: self._client.update(**kwargs))
 
     async def clear(self) -> None:

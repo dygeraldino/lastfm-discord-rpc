@@ -55,3 +55,12 @@ class TestTrack:
         t1 = Track(title="Song", artist="Artist", album="Album", is_playing=True)
         t2 = Track(title="song", artist="artist", album="album", is_playing=True)
         assert t1.hash_key == t2.hash_key
+
+    def test_track_with_button_urls(self):
+        buttons = [("Listen on Last.fm", "https://last.fm/track"), ("View Artist", "https://last.fm/artist")]
+        track = Track(title="Song", artist="Artist", button_urls=buttons)
+        assert track.button_urls == buttons
+
+    def test_track_button_urls_default_empty(self):
+        track = Track(title="Song", artist="Artist")
+        assert track.button_urls == []

@@ -1,5 +1,6 @@
 import httpx
 from typing import Optional
+from urllib.parse import quote
 from src.domain.interfaces.music_provider import MusicProvider
 from src.domain.entities.track import Track
 from src.domain.exceptions import ProviderError
@@ -17,6 +18,17 @@ class LastFmClient(MusicProvider):
         self._base_url = settings.lastfm_base_url
         self._api_key = settings.lastfm_api_key
         self._username = settings.lastfm_username
+
+    def _build_lastfm_urls(self, artist: str, title: str) -> list[tuple[str, str]]:
+        """Build Last.fm URLs for track and artist with proper URL encoding."""
+        encoded_artist = quote(artist, safe="")
+        encoded_title = quote(title, safe="")
+        track_url = f"https://www.last.fm/music/{encoded_artist}/_/{encoded_title}"
+        artist_url = f"https://www.last.fm/music/{encoded_artist}"
+        return [
+            ("Listen on Last.fm", track_url),
+            ("View Artist", artist_url),
+        ]
 
     async def _get_client(self) -> httpx.AsyncClient:
         if self._client is None or self._client.is_closed:
@@ -137,6 +149,8 @@ class LastFmClient(MusicProvider):
             timestamp_str = track_data.get("date", {}).get("uts") if isinstance(track_data.get("date"), dict) else None
             timestamp = datetime.fromtimestamp(int(timestamp_str)) if timestamp_str else datetime.now()
 
+            button_urls = self._build_lastfm_urls(artist, title)
+
             return Track(
                 title=title,
                 artist=artist,
@@ -144,6 +158,7 @@ class LastFmClient(MusicProvider):
                 artwork_url=artwork_url,
                 is_playing=True,
                 timestamp=timestamp,
+                button_urls=button_urls,
             )
         except Exception as e:
             logger.error(f"Error parsing track data: {e}")
