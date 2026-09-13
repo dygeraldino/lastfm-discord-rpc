@@ -16,8 +16,8 @@ logger = get_logger(__name__)
 def _create_default_icon() -> Image.Image:
     img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
-    draw.ellipse([8, 8, 56, 56], fill=(29, 185, 84, 255))
-    draw.text((20, 18), "♪", fill=(255, 255, 255, 255), font_size=32)
+    draw.ellipse([8, 8, 56, 56], fill=(0, 245, 212, 255))
+    draw.text((20, 18), "♪", fill=(11, 14, 20, 255), font_size=32)
     return img
 
 

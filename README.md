@@ -10,19 +10,18 @@ Under the hood, it follows Clean Architecture with strict layer separation (Doma
 
 ### Method 1: Download Pre-compiled Release (Recommended)
 
-> **Note**: GitHub Releases are not yet configured. Check the [Releases page](https://github.com/dygeraldino/lastfm-discord-rpc/releases) for future availability.
-
-1. Download `LastfmPresence_Setup_1.0.0.exe` from the latest release
+1. Download `LastfmPresence_Setup_1.0.0.exe` from the latest [release](https://github.com/dygeraldino/lastfm-discord-rpc/releases)
 2. Run the installer
 3. Choose whether to start automatically at login
 4. Launch from Start Menu or system tray
 
-### Method 2: Compile the Executable Yourself
+### Method 2: Compile the Executable & Installer Yourself
 
 **Requirements:**
 
 - Python 3.11+
 - Git
+- Inno Setup 6+ (optional, for installer)
 
 ```bash
 # Clone the repository
@@ -33,21 +32,17 @@ cd lastfm-discord-rpc
 pip install -r requirements.txt
 pip install pyinstaller
 
-# Build the standalone executable
+# Build the standalone executable + Windows installer (if Inno Setup is installed)
 python build.py
 
-# The executable will be at dist/LastfmPresence.exe (~53 MB)
-# Run it directly - it will open the config window on first launch
+# Output:
+# - dist/LastfmPresence.exe (~54 MB) - standalone executable
+# - dist/LastfmPresence_Setup_1.0.0.exe - Windows installer (if Inno Setup found)
+# Run directly - opens config window on first launch
 dist\LastfmPresence.exe
 ```
 
-**Optional: Create Windows Installer**
-
-```bash
-# Requires Inno Setup 6 installed
-iscc installer.iss
-# Output: dist/LastfmPresence_Setup_1.0.0.exe
-```
+> **Note:** The build script auto-detects Inno Setup. If not found, it only builds the executable and skips the installer.
 
 ### Method 3: Run from Source (Python + Task Scheduler)
 
