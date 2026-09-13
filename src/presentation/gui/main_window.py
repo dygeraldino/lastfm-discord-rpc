@@ -14,6 +14,7 @@ ctk.set_default_color_theme("blue")
 class ConfigWindow:
     def __init__(self, on_save_callback=None) -> None:
         self._on_save_callback = on_save_callback
+        self._saved = False
         self._repo = JsonConfigRepository()
         self._config = self._repo.load()
         self._root: ctk.CTk | None = None
@@ -22,7 +23,8 @@ class ConfigWindow:
         self._save_btn: ctk.CTkButton | None = None
         self._test_btn: ctk.CTkButton | None = None
 
-    def show(self) -> None:
+    def show(self) -> bool:
+        self._saved = False
         self._root = ctk.CTk()
         self._root.title("LastfmPresence - Configuración")
         self._root.geometry("520x580")
@@ -31,6 +33,7 @@ class ConfigWindow:
 
         self._build_ui()
         self._root.mainloop()
+        return self._saved
 
     def _build_ui(self) -> None:
         main_frame = ctk.CTkFrame(self._root, corner_radius=15)
@@ -167,9 +170,12 @@ class ConfigWindow:
 
         self._repo.save(new_config)
         self._set_status("Configuración guardada correctamente", error=False)
+        self._saved = True
 
         if self._on_save_callback:
-            self._root.after(500, lambda: (self._root.destroy(), self._on_save_callback()))
+            self._root.after(300, lambda: (self._root.destroy(), self._on_save_callback()))
+        else:
+            self._root.after(300, self._root.destroy)
 
     def _on_test_connection(self) -> None:
         self._test_btn.configure(state="disabled", text="Probando...")
@@ -222,6 +228,7 @@ class ConfigWindow:
             self._status_label.configure(text=message, text_color=color)
 
     def _on_close(self) -> None:
+        self._saved = False
         if self._root:
             self._root.destroy()
 
@@ -231,6 +238,6 @@ class ConfigWindow:
         webbrowser.open(url)
 
 
-def run_config_window(on_save_callback=None) -> None:
+def run_config_window(on_save_callback=None) -> bool:
     window = ConfigWindow(on_save_callback)
-    window.show()
+    return window.show()

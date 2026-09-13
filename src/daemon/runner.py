@@ -14,9 +14,13 @@ class DaemonRunner:
         interval: int | None = None,
     ) -> None:
         self._use_case = use_case
-        self._interval = interval or settings.poll_interval
+        self._custom_interval = interval
         self._shutdown_requested = False
         self._shutdown_event = asyncio.Event()
+
+    @property
+    def _interval(self) -> int:
+        return self._custom_interval if self._custom_interval is not None else settings.poll_interval
 
     def request_shutdown(self) -> None:
         logger.info("Shutdown requested")

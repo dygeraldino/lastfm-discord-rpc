@@ -50,6 +50,8 @@ class JsonConfigRepository:
             with open(self._config_path, "w", encoding="utf-8") as f:
                 json.dump(config, f, indent=2, ensure_ascii=False)
             logger.info("Configuration saved to %s", self._config_path)
+            from config.settings import reload_settings
+            reload_settings()
         except OSError as e:
             logger.error(f"Failed to save config: {e}")
             raise

@@ -95,6 +95,16 @@ python main.py
 
 ## Configuration
 
+### Important: Last.fm Privacy Settings
+
+> **This directly affects the application functionality.**
+
+If you enable **"Hide recent listening information"** in your [Last.fm Privacy Settings](https://www.last.fm/settings/privacy), the app will **stop working**.
+
+**Why it breaks:** The daemon queries the public `user.getRecentTracks` endpoint using your username and API key. When this privacy option is enabled, Last.fm hides your real-time scrobbles from all public API calls. The daemon receives an empty track list and cannot detect what you're listening to.
+
+**Fix:** Keep **"Hide recent listening information" unchecked** so your recent tracks remain publicly accessible via the API.
+
 ### Getting Credentials
 
 1. **Last.fm API Key**: https://www.last.fm/api/account/create

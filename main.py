@@ -1,6 +1,9 @@
 import asyncio
+import ctypes
+import os
 import sys
-from config.settings import settings
+from pathlib import Path
+from config.settings import settings, reload_settings
 from config.logging_config import setup_logging, get_logger
 from src.infrastructure.providers.lastfm_client import LastFmClient
 from src.infrastructure.publishers.discord_rpc import DiscordRpcPublisher
@@ -11,12 +14,37 @@ from src.infrastructure.persistence.json_config_repository import JsonConfigRepo
 from src.presentation.gui.tray_app import run_tray_app
 from src.presentation.gui.main_window import run_config_window
 
+# Ensure working directory is application folder when packaged
+if getattr(sys, "frozen", False):
+    try:
+        os.chdir(Path(sys.executable).parent)
+    except Exception:
+        pass
+
 logger = get_logger(__name__)
+
+_MUTEX_NAME = "Global\\LastfmPresence_SingleInstance_Mutex_Guid_1029"
+_mutex_handle = None
 
 _runner: DaemonRunner | None = None
 _presence_publisher: DiscordRpcPublisher | None = None
 _music_provider: LastFmClient | None = None
 _signal_handler: DaemonSignalHandler | None = None
+
+
+def _ensure_single_instance() -> bool:
+    global _mutex_handle
+    if sys.platform == "win32":
+        try:
+            kernel32 = ctypes.windll.kernel32
+            _mutex_handle = kernel32.CreateMutexW(None, False, _MUTEX_NAME)
+            last_error = kernel32.GetLastError()
+            ERROR_ALREADY_EXISTS = 183
+            if last_error == ERROR_ALREADY_EXISTS:
+                return False
+        except Exception as e:
+            logger.warning(f"Failed to check mutex: {e}")
+    return True
 
 
 async def _daemon_main() -> None:
@@ -61,14 +89,22 @@ def _start_tray() -> None:
 def main() -> None:
     setup_logging()
 
+    if not _ensure_single_instance():
+        logger.warning("Another instance of LastfmPresence is already running. Exiting cleanly.")
+        sys.exit(0)
+
     repo = JsonConfigRepository()
 
     if not repo.is_configured():
         logger.info("Configuration not found, opening config window")
-        run_config_window(on_save_callback=_start_tray)
-    else:
-        logger.info("Configuration found, starting tray app")
-        _start_tray()
+        saved = run_config_window()
+        if not saved or not repo.is_configured():
+            logger.info("Configuration window closed without saving required settings. Exiting cleanly.")
+            sys.exit(0)
+
+    logger.info("Configuration valid, starting tray app")
+    reload_settings()
+    _start_tray()
 
 
 if __name__ == "__main__":

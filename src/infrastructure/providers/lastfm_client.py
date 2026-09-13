@@ -15,9 +15,18 @@ logger = get_logger(__name__)
 class LastFmClient(MusicProvider):
     def __init__(self) -> None:
         self._client: httpx.AsyncClient | None = None
-        self._base_url = settings.lastfm_base_url
-        self._api_key = settings.lastfm_api_key
-        self._username = settings.lastfm_username
+
+    @property
+    def _base_url(self) -> str:
+        return settings.lastfm_base_url
+
+    @property
+    def _api_key(self) -> str:
+        return settings.lastfm_api_key
+
+    @property
+    def _username(self) -> str:
+        return settings.lastfm_username
 
     def _build_lastfm_urls(self, artist: str, title: str) -> list[tuple[str, str]]:
         """Build Last.fm URLs for track and artist with proper URL encoding."""

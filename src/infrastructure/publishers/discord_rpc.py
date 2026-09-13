@@ -14,16 +14,32 @@ logger = get_logger(__name__)
 class DiscordRpcPublisher(PresencePublisher):
     def __init__(self) -> None:
         self._client: Presence | None = None
-        self._client_id = settings.discord_client_id
+        self._override_client_id: str | None = None
         self._connected = False
         self._reconnect_task: asyncio.Task | None = None
+
+    @property
+    def _client_id(self) -> str:
+        if self._override_client_id is not None:
+            return self._override_client_id
+        return settings.discord_client_id
+
+    @_client_id.setter
+    def _client_id(self, value: str) -> None:
+        self._override_client_id = value
 
     async def connect(self) -> None:
         if self._connected and self._client:
             return
 
+        client_id = self._client_id
+        if not client_id:
+            logger.warning("Discord Client ID is empty, will retry on next update")
+            self._connected = False
+            return
+
         try:
-            self._client = Presence(self._client_id)
+            self._client = Presence(client_id)
             await asyncio.to_thread(self._client.connect)
             self._connected = True
             logger.info("Connected to Discord RPC")

@@ -82,3 +82,11 @@ def get_settings() -> Settings:
 
 
 settings = get_settings()
+
+
+def reload_settings() -> Settings:
+    global settings
+    new_settings = get_settings()
+    for field_name in type(settings).model_fields:
+        setattr(settings, field_name, getattr(new_settings, field_name))
+    return settings

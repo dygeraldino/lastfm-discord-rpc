@@ -21,8 +21,18 @@ def _create_default_icon() -> Image.Image:
     return img
 
 
+def _get_assets_dir() -> Path:
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        base_dir = Path(sys._MEIPASS)
+        if (base_dir / "src" / "presentation" / "gui" / "assets").exists():
+            return base_dir / "src" / "presentation" / "gui" / "assets"
+        elif (base_dir / "assets").exists():
+            return base_dir / "assets"
+    return Path(__file__).parent / "assets"
+
+
 def _load_tray_icon() -> Image.Image:
-    assets_dir = Path(__file__).parent / "assets"
+    assets_dir = _get_assets_dir()
     icon_path = assets_dir / "icon.ico"
     if icon_path.exists():
         try:
@@ -88,6 +98,8 @@ class TrayApp:
     def _run_config_window(self) -> None:
         def on_config_saved():
             logger.info("Config saved, restarting daemon...")
+            from config.settings import reload_settings
+            reload_settings()
             self._shutdown_callback()
             self._start_daemon_thread()
 

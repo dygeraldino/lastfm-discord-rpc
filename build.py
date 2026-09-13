@@ -66,6 +66,7 @@ def build_executable() -> None:
         f"--name=LastfmPresence",
         f"--icon={icon_path}",
         f"--add-data={assets_dir}{os.pathsep}assets",
+        f"--add-data={assets_dir}{os.pathsep}src/presentation/gui/assets",
         f"--add-data={config_example}{os.pathsep}.",
         "--collect-all=customtkinter",
         "--hidden-import=pystray",
@@ -102,12 +103,36 @@ def build_executable() -> None:
 
     exe_path = dist_dir / "LastfmPresence.exe"
     if exe_path.exists():
-        print(f"\nBuild successful!")
+        print(f"\nPyInstaller build successful!")
         print(f"Executable: {exe_path}")
         print(f"Size: {exe_path.stat().st_size / (1024*1024):.1f} MB")
     else:
         print("Error: Executable not found in dist/")
         sys.exit(1)
+
+    # Compile Inno Setup installer if available
+    iscc_path = shutil.which("iscc")
+    if not iscc_path:
+        for possible in [
+            r"C:\Program Files\Inno Setup 7\ISCC.exe",
+            r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe",
+            r"C:\Program Files\Inno Setup 6\ISCC.exe",
+        ]:
+            if os.path.exists(possible):
+                iscc_path = possible
+                break
+
+    iss_script = project_root / "installer.iss"
+    if iscc_path and iss_script.exists():
+        print("\nCompiling Inno Setup installer...")
+        iscc_cmd = [iscc_path, str(iss_script)]
+        iscc_result = subprocess.run(iscc_cmd, cwd=project_root)
+        if iscc_result.returncode == 0:
+            print("Inno Setup installer created successfully in dist/")
+        else:
+            print("Warning: Inno Setup compilation failed.")
+    elif not iscc_path:
+        print("\nInno Setup (iscc) not found in PATH or standard installation directories. Skipping setup compilation.")
 
 
 if __name__ == "__main__":
