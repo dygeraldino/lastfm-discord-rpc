@@ -16,6 +16,7 @@ DEFAULT_CONFIG = {
     "discord_client_id": "",
     "poll_interval": 30,
     "enable_rich_presence_buttons": True,
+    "enable_fallback_artwork": True,
 }
 
 

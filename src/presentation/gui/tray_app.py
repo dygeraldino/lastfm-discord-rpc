@@ -72,6 +72,19 @@ class TrayApp:
         self._daemon_thread.start()
         logger.info("Daemon thread started")
 
+    def _stop_daemon_thread(self) -> None:
+        if self._daemon_thread and self._daemon_thread.is_alive():
+            logger.info("Stopping existing daemon thread...")
+            self._shutdown_callback()
+            self._daemon_thread.join(timeout=5.0)
+            if self._daemon_thread.is_alive():
+                logger.warning("Daemon thread did not terminate within 5 seconds")
+            self._daemon_thread = None
+
+    def _restart_daemon_thread(self) -> None:
+        self._stop_daemon_thread()
+        self._start_daemon_thread()
+
     def _setup_tray(self) -> None:
         icon_image = _load_tray_icon()
 
@@ -100,8 +113,7 @@ class TrayApp:
             logger.info("Config saved, restarting daemon...")
             from config.settings import reload_settings
             reload_settings()
-            self._shutdown_callback()
-            self._start_daemon_thread()
+            self._restart_daemon_thread()
 
         run_config_window(on_save_callback=on_config_saved)
 
@@ -123,7 +135,7 @@ class TrayApp:
     def _on_exit(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         logger.info("Exit requested from tray")
         self._running = False
-        self._shutdown_callback()
+        self._stop_daemon_thread()
         if self._icon:
             self._icon.stop()
 

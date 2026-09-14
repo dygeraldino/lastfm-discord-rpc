@@ -69,7 +69,7 @@ class ConfigWindow:
             self._saved = False
             self._root = ctk.CTk()
             self._root.title("LastfmPresence - Configuración")
-            self._root.geometry("540x660")
+            self._root.geometry("540x710")
             self._root.resizable(False, False)
             self._root.configure(fg_color="#0F1015")
             self._root.protocol("WM_DELETE_WINDOW", self._on_close)
@@ -137,14 +137,23 @@ class ConfigWindow:
             ("lastfm_api_key", "API Key Last.fm", True),
             ("discord_client_id", "Discord Client ID", True),
             ("poll_interval", "Intervalo de sondeo (seg)", False),
-            ("enable_fallback_artwork", "Buscar carátulas en MusicBrainz (fallback)", False),
+            ("enable_fallback_artwork", "Buscar carátulas alternativas (Deezer / MusicBrainz)", False),
         ]
 
         for key, label_text, is_secret in fields:
             self._create_field(form_frame, key, label_text, is_secret)
 
+        self._status_label = ctk.CTkLabel(
+            main_frame,
+            text="",
+            font=ctk.CTkFont(size=12),
+            text_color="#8F94A6",
+            wraplength=440,
+        )
+        self._status_label.pack(pady=(8, 4))
+
         buttons_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        buttons_frame.pack(fill="x", padx=28, pady=(16, 8))
+        buttons_frame.pack(fill="x", padx=28, pady=(8, 12))
 
         self._test_btn = ctk.CTkButton(
             buttons_frame,
@@ -163,7 +172,7 @@ class ConfigWindow:
 
         self._save_btn = ctk.CTkButton(
             buttons_frame,
-            text="Guardar e Iniciar",
+            text="Guardar",
             command=self._on_save,
             height=42,
             font=ctk.CTkFont(size=13, weight="bold"),
@@ -173,15 +182,6 @@ class ConfigWindow:
             corner_radius=10,
         )
         self._save_btn.pack(side="right", padx=(8, 0), fill="x", expand=True)
-
-        self._status_label = ctk.CTkLabel(
-            main_frame,
-            text="",
-            font=ctk.CTkFont(size=12),
-            text_color="#8F94A6",
-            wraplength=440,
-        )
-        self._status_label.pack(pady=(6, 10))
 
         links_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
         links_frame.pack(pady=(0, 15))
@@ -222,7 +222,7 @@ class ConfigWindow:
         input_container = ctk.CTkFrame(field_frame, fg_color="transparent")
         input_container.pack(fill="x")
 
-        current_value = self._config.get(key, "")
+        current_value = self._config.get(key, True if key == "enable_fallback_artwork" else "")
         is_boolean = key == "enable_fallback_artwork"
 
         if is_boolean:
@@ -336,9 +336,11 @@ class ConfigWindow:
 
         def test_thread():
             try:
-                config = {k: v.get().strip() for k, v in self._entries.items()}
-                username = config.get("lastfm_username", "")
-                api_key = config.get("lastfm_api_key", "")
+                username_widget = self._entries.get("lastfm_username")
+                api_key_widget = self._entries.get("lastfm_api_key")
+
+                username = username_widget.get().strip() if username_widget and hasattr(username_widget, "get") else ""
+                api_key = api_key_widget.get().strip() if api_key_widget and hasattr(api_key_widget, "get") else ""
 
                 if not username or not api_key:
                     self._root.after(0, lambda: self._set_status("Usuario y API Key son requeridos", error=True))

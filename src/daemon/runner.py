@@ -17,6 +17,7 @@ class DaemonRunner:
         self._custom_interval = interval
         self._shutdown_requested = False
         self._shutdown_event = asyncio.Event()
+        self._loop: asyncio.AbstractEventLoop | None = None
 
     @property
     def _interval(self) -> int:
@@ -25,9 +26,13 @@ class DaemonRunner:
     def request_shutdown(self) -> None:
         logger.info("Shutdown requested")
         self._shutdown_requested = True
-        self._shutdown_event.set()
+        if self._loop and self._loop.is_running():
+            self._loop.call_soon_threadsafe(self._shutdown_event.set)
+        else:
+            self._shutdown_event.set()
 
     async def run(self) -> None:
+        self._loop = asyncio.get_running_loop()
         logger.info(f"Starting daemon with poll interval: {self._interval}s")
 
         while not self._shutdown_requested:
@@ -35,6 +40,9 @@ class DaemonRunner:
                 await self._use_case.execute()
             except Exception as e:
                 logger.error(f"Error in daemon loop: {e}", exc_info=True)
+
+            if self._shutdown_requested:
+                break
 
             try:
                 await asyncio.wait_for(self._shutdown_event.wait(), timeout=self._interval)
