@@ -1,10 +1,10 @@
 # LastfmPresence
 
-LastfmPresence is a Windows desktop application that bridges your Last.fm listening activity with Discord Rich Presence. It displays your currently playing track as a Discord status, complete with album artwork, track/artist/album details, and interactive buttons to "Listen on Last.fm" or "View Artist" directly from Discord.
+**LastfmPresence** is a lightweight Windows desktop application that seamlessly bridges your active Last.fm listening activity with Discord Rich Presence. It displays your currently playing track as a Discord status, complete with high-resolution album artwork, track/artist/album details, and interactive profile buttons ("Listen on Last.fm" and "View Artist").
 
-Designed as a polished desktop app rather than a raw script, it includes a dark-mode GUI for first-time configuration (no manual .env editing), a system tray icon for background operation, structured logging to `%APPDATA%`, and a standalone ~53 MB executable that requires no Python installation. An Inno Setup installer is also available for proper Windows integration with Start Menu shortcuts and optional auto-start on login.
-
-Under the hood, it follows Clean Architecture with strict layer separation (Domain, Application, Infrastructure, Daemon, Presentation), dependency inversion via interfaces, exponential backoff with 429 handling, graceful shutdown on SIGINT/SIGTERM, and full type safety with Pydantic validation.
+> **Important Considerations:**
+> - **Not a Scrobbler or Music Player:** LastfmPresence **does not scrobble tracks** or play audio. It is designed specifically for users who **already scrobble** to Last.fm using external integrations (such as *Web Scrobbler*, official mobile apps, or direct streaming service connections like Spotify or Apple Music).
+> - **No Discord Client Mods Required:** Built for users who want custom Last.fm status integration **without using modified Discord clients**.
 
 ## Installation Methods
 
