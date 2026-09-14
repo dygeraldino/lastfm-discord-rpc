@@ -6,6 +6,9 @@ from pathlib import Path
 from config.settings import settings, reload_settings
 from config.logging_config import setup_logging, get_logger
 from src.infrastructure.providers.lastfm_client import LastFmClient
+from src.infrastructure.providers.fallback_artwork_provider import FallbackArtworkProvider
+from src.domain.interfaces.artwork_provider import ArtworkProvider
+from src.infrastructure.persistence.json_artwork_cache_repository import JsonArtworkCacheRepository
 from src.infrastructure.publishers.discord_rpc import DiscordRpcPublisher
 from src.application.use_cases.sync_presence import SyncPresenceUseCase
 from src.daemon.runner import DaemonRunner
@@ -29,6 +32,7 @@ _mutex_handle = None
 _runner: DaemonRunner | None = None
 _presence_publisher: DiscordRpcPublisher | None = None
 _music_provider: LastFmClient | None = None
+_artwork_provider: ArtworkProvider | None = None
 _signal_handler: DaemonSignalHandler | None = None
 
 
@@ -48,11 +52,12 @@ def _ensure_single_instance() -> bool:
 
 
 async def _daemon_main() -> None:
-    global _runner, _presence_publisher, _music_provider, _signal_handler
+    global _runner, _presence_publisher, _music_provider, _artwork_provider, _signal_handler
 
     logger.info("Starting Last.fm Discord Rich Presence Daemon")
 
-    _music_provider = LastFmClient()
+    _artwork_provider = FallbackArtworkProvider(JsonArtworkCacheRepository())
+    _music_provider = LastFmClient(artwork_provider=_artwork_provider)
     _presence_publisher = DiscordRpcPublisher()
 
     await _presence_publisher.connect()

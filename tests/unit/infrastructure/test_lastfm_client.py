@@ -1,9 +1,11 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 from src.infrastructure.providers.lastfm_client import LastFmClient
+from src.domain.interfaces.artwork_provider import ArtworkProvider
 from src.domain.entities.track import Track
 from src.domain.exceptions import ProviderError
 from datetime import datetime
+from config.settings import settings as settings_obj
 
 
 class TestLastFmClient:
@@ -213,3 +215,176 @@ class TestLastFmClient:
         assert "Come%20Together" in result.button_urls[0][1]
         assert result.button_urls[1][0] == "View Artist"
         assert "The%20Beatles" in result.button_urls[1][1]
+
+
+class TestLastFmClientFallbackArtwork:
+    @pytest.fixture
+    def mock_artwork_provider(self):
+        provider = MagicMock(spec=ArtworkProvider)
+        provider.get_artwork_url = AsyncMock(return_value="https://fallback.com/art.jpg")
+        provider.close = AsyncMock()
+        return provider
+
+    @pytest.fixture
+    def client_with_fallback(self, mock_artwork_provider):
+        return LastFmClient(artwork_provider=mock_artwork_provider)
+
+    @pytest.mark.asyncio
+    async def test_uses_fallback_when_no_artwork_and_enabled(self, client_with_fallback, mock_artwork_provider):
+        original_enabled = settings_obj.enable_fallback_artwork
+        settings_obj.enable_fallback_artwork = True
+        try:
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "recenttracks": {
+                    "track": [{
+                        "name": "Song",
+                        "artist": {"#text": "Artist"},
+                        "album": {"#text": "Album"},
+                        "image": [],
+                        "@attr": {"nowplaying": "true"},
+                    }]
+                }
+            }
+
+            with patch.object(client_with_fallback, "_get_client") as mock_get_client:
+                mock_http = AsyncMock()
+                mock_http.get.return_value = mock_response
+                mock_get_client.return_value = mock_http
+
+                result = await client_with_fallback.get_current_track()
+
+            assert result is not None
+            assert result.artwork_url == "https://fallback.com/art.jpg"
+            mock_artwork_provider.get_artwork_url.assert_awaited_once_with("Artist", "Song", "Album")
+        finally:
+            settings_obj.enable_fallback_artwork = original_enabled
+
+    @pytest.mark.asyncio
+    async def test_does_not_use_fallback_when_disabled(self, client_with_fallback, mock_artwork_provider):
+        original_enabled = settings_obj.enable_fallback_artwork
+        settings_obj.enable_fallback_artwork = False
+        try:
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "recenttracks": {
+                    "track": [{
+                        "name": "Song",
+                        "artist": {"#text": "Artist"},
+                        "album": {"#text": "Album"},
+                        "image": [],
+                        "@attr": {"nowplaying": "true"},
+                    }]
+                }
+            }
+
+            with patch.object(client_with_fallback, "_get_client") as mock_get_client:
+                mock_http = AsyncMock()
+                mock_http.get.return_value = mock_response
+                mock_get_client.return_value = mock_http
+
+                result = await client_with_fallback.get_current_track()
+
+            assert result is not None
+            assert result.artwork_url == ""
+            mock_artwork_provider.get_artwork_url.assert_not_awaited()
+        finally:
+            settings_obj.enable_fallback_artwork = original_enabled
+
+    @pytest.mark.asyncio
+    async def test_uses_lastfm_artwork_when_available(self, client_with_fallback, mock_artwork_provider):
+        original_enabled = settings_obj.enable_fallback_artwork
+        settings_obj.enable_fallback_artwork = True
+        try:
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "recenttracks": {
+                    "track": [{
+                        "name": "Song",
+                        "artist": {"#text": "Artist"},
+                        "album": {"#text": "Album"},
+                        "image": [{"size": "extralarge", "#text": "lastfm_cover.jpg"}],
+                        "@attr": {"nowplaying": "true"},
+                    }]
+                }
+            }
+
+            with patch.object(client_with_fallback, "_get_client") as mock_get_client:
+                mock_http = AsyncMock()
+                mock_http.get.return_value = mock_response
+                mock_get_client.return_value = mock_http
+
+                result = await client_with_fallback.get_current_track()
+
+            assert result is not None
+            assert result.artwork_url == "lastfm_cover.jpg"
+            mock_artwork_provider.get_artwork_url.assert_not_awaited()
+        finally:
+            settings_obj.enable_fallback_artwork = original_enabled
+
+    @pytest.mark.asyncio
+    async def test_fallback_provider_error_handled_gracefully(self, client_with_fallback, mock_artwork_provider):
+        original_enabled = settings_obj.enable_fallback_artwork
+        settings_obj.enable_fallback_artwork = True
+        mock_artwork_provider.get_artwork_url.side_effect = Exception("Network error")
+        try:
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "recenttracks": {
+                    "track": [{
+                        "name": "Song",
+                        "artist": {"#text": "Artist"},
+                        "album": {"#text": "Album"},
+                        "image": [],
+                        "@attr": {"nowplaying": "true"},
+                    }]
+                }
+            }
+
+            with patch.object(client_with_fallback, "_get_client") as mock_get_client:
+                mock_http = AsyncMock()
+                mock_http.get.return_value = mock_response
+                mock_get_client.return_value = mock_http
+
+                result = await client_with_fallback.get_current_track()
+
+            assert result is not None
+            assert result.artwork_url == ""
+        finally:
+            settings_obj.enable_fallback_artwork = original_enabled
+
+    @pytest.mark.asyncio
+    async def test_uses_fallback_when_lastfm_returns_placeholder_png(self, client_with_fallback, mock_artwork_provider):
+        original_enabled = settings_obj.enable_fallback_artwork
+        settings_obj.enable_fallback_artwork = True
+        try:
+            mock_response = MagicMock()
+            mock_response.json.return_value = {
+                "recenttracks": {
+                    "track": [{
+                        "name": "Song",
+                        "artist": {"#text": "Artist"},
+                        "album": {"#text": "Album"},
+                        "image": [{"size": "extralarge", "#text": "https://lastfm-img.freetls.fastly.net/i/u/300x300/2a96cbd8b46e442fc41c2b86b821562f.png"}],
+                        "@attr": {"nowplaying": "true"},
+                    }]
+                }
+            }
+
+            with patch.object(client_with_fallback, "_get_client") as mock_get_client:
+                mock_http = AsyncMock()
+                mock_http.get.return_value = mock_response
+                mock_get_client.return_value = mock_http
+
+                result = await client_with_fallback.get_current_track()
+
+            assert result is not None
+            assert result.artwork_url == "https://fallback.com/art.jpg"
+            mock_artwork_provider.get_artwork_url.assert_awaited_once_with("Artist", "Song", "Album")
+        finally:
+            settings_obj.enable_fallback_artwork = original_enabled
+
+    @pytest.mark.asyncio
+    async def test_close_calls_artwork_provider_close(self, client_with_fallback, mock_artwork_provider):
+        await client_with_fallback.close()
+        mock_artwork_provider.close.assert_awaited_once()

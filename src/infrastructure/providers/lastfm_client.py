@@ -2,6 +2,7 @@ import httpx
 from typing import Optional
 from urllib.parse import quote
 from src.domain.interfaces.music_provider import MusicProvider
+from src.domain.interfaces.artwork_provider import ArtworkProvider
 from src.domain.entities.track import Track
 from src.domain.exceptions import ProviderError
 from config.settings import settings
@@ -13,8 +14,9 @@ logger = get_logger(__name__)
 
 
 class LastFmClient(MusicProvider):
-    def __init__(self) -> None:
+    def __init__(self, artwork_provider: ArtworkProvider | None = None) -> None:
         self._client: httpx.AsyncClient | None = None
+        self._artwork_provider = artwork_provider
 
     @property
     def _base_url(self) -> str:
@@ -61,7 +63,7 @@ class LastFmClient(MusicProvider):
         try:
             response = await self._make_request_with_retry(client, params)
             data = response.json()
-            return self._parse_track(data)
+            return await self._parse_track(data)
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 429:
                 retry_after_hdr = e.response.headers.get("Retry-After")
@@ -111,7 +113,18 @@ class LastFmClient(MusicProvider):
 
         raise ProviderError("Max retries exceeded")
 
-    def _parse_track(self, data: dict) -> Optional[Track]:
+    @staticmethod
+    def _is_placeholder_artwork(url: str) -> bool:
+        if not url:
+            return True
+        known_placeholders = (
+            "2a96cbd8b46e442fc41c2b86b821562f",  # Default Last.fm star track/album image
+            "c6f707e6e835197e0bdc2870105e35ed",  # Default Last.fm artist image
+            "4128a60df9657d23539f78077e2f5763",  # Additional default image variant
+        )
+        return any(p in url for p in known_placeholders)
+
+    async def _parse_track(self, data: dict) -> Optional[Track]:
         if "error" in data:
             err_code = data.get("error")
             err_msg = data.get("message", "Unknown Last.fm error")
@@ -155,6 +168,18 @@ class LastFmClient(MusicProvider):
                 if artwork_url:
                     break
 
+            if self._is_placeholder_artwork(artwork_url):
+                artwork_url = ""
+
+            if not artwork_url and self._artwork_provider and settings.enable_fallback_artwork:
+                try:
+                    fallback_artwork = await self._artwork_provider.get_artwork_url(artist, title, album)
+                    if fallback_artwork:
+                        artwork_url = fallback_artwork
+                        logger.info(f"Using fallback artwork for {artist} - {title}: {fallback_artwork}")
+                except Exception as e:
+                    logger.warning(f"Fallback artwork provider error: {e}")
+
             timestamp_str = track_data.get("date", {}).get("uts") if isinstance(track_data.get("date"), dict) else None
             timestamp = datetime.fromtimestamp(int(timestamp_str)) if timestamp_str else datetime.now()
 
@@ -177,3 +202,6 @@ class LastFmClient(MusicProvider):
         if self._client and not self._client.is_closed:
             await self._client.aclose()
             logger.debug("Last.fm HTTP client closed")
+
+        if self._artwork_provider:
+            await self._artwork_provider.close()

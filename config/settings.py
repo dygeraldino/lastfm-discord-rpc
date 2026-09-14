@@ -54,6 +54,7 @@ class Settings(BaseSettings):
     poll_interval: int = 30
     log_level: str = "INFO"
     enable_rich_presence_buttons: bool = True
+    enable_fallback_artwork: bool = True
 
     @property
     def lastfm_base_url(self) -> str:

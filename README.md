@@ -10,9 +10,9 @@ Under the hood, it follows Clean Architecture with strict layer separation (Doma
 
 ### Method 1: Download Pre-compiled Release (Recommended)
 
-1. Download `LastfmPresence_Setup_1.0.0.exe` from the latest [release](https://github.com/dygeraldino/lastfm-discord-rpc/releases)
-2. Run the installer
-3. Choose whether to start automatically at login
+1. Download `LastfmPresence_Setup_v1.0.1_x64.exe` (or `LastfmPresence_Portable_v1.0.1.exe`) from the latest [release](https://github.com/dygeraldino/lastfm-discord-rpc/releases)
+2. Run the installer or launch the portable executable directly
+3. Choose whether to start automatically at login (Installer option)
 4. Launch from Start Menu or system tray
 
 ### Method 2: Compile the Executable & Installer Yourself
@@ -35,14 +35,19 @@ pip install pyinstaller
 # Build the standalone executable + Windows installer (if Inno Setup is installed)
 python build.py
 
-# Output:
-# - dist/LastfmPresence.exe (~54 MB) - standalone executable
-# - dist/LastfmPresence_Setup_1.0.0.exe - Windows installer (if Inno Setup found)
+# Outputs in dist/:
+# - dist/LastfmPresence.exe (~54 MB) - Base standalone executable output by PyInstaller
+# - dist/LastfmPresence_Portable_v1.0.1.exe (~54 MB) - Versioned portable executable (ready for direct releases)
+# - dist/LastfmPresence_Setup_v1.0.1_x64.exe (~50 MB) - Official Windows installer (if Inno Setup found)
+
 # Run directly - opens config window on first launch
 dist\LastfmPresence.exe
 ```
 
-> **Note:** The build script auto-detects Inno Setup. If not found, it only builds the executable and skips the installer.
+> **Build Outputs & Distinction:**
+> - **`LastfmPresence.exe`**: Base binary compiled by PyInstaller. Inno Setup uses this file to package the installer.
+> - **`LastfmPresence_Portable_v1.0.1.exe`**: Identical binary to `LastfmPresence.exe`, renamed with version details for portable usage (no installation required).
+> - **`LastfmPresence_Setup_v1.0.1_x64.exe`**: Official Windows installer created via Inno Setup (adds Start Menu shortcuts and optional Windows auto-start).
 
 ### Method 3: Run from Source (Python + Task Scheduler)
 
@@ -115,6 +120,7 @@ If you enable **"Hide recent listening information"** in your [Last.fm Privacy S
 | `poll_interval`                | `30`       | Seconds between Last.fm polls                      |
 | `log_level`                    | `INFO`     | Log level (DEBUG, INFO, WARNING, ERROR)            |
 | `enable_rich_presence_buttons` | `true`     | Show "Listen on Last.fm" and "View Artist" buttons |
+| `enable_fallback_artwork`      | `true`     | Enable Deezer & MusicBrainz fallback artwork lookup|
 
 ## Testing
 

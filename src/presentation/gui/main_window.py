@@ -137,6 +137,7 @@ class ConfigWindow:
             ("lastfm_api_key", "API Key Last.fm", True),
             ("discord_client_id", "Discord Client ID", True),
             ("poll_interval", "Intervalo de sondeo (seg)", False),
+            ("enable_fallback_artwork", "Buscar carátulas en MusicBrainz (fallback)", False),
         ]
 
         for key, label_text, is_secret in fields:
@@ -221,38 +222,60 @@ class ConfigWindow:
         input_container = ctk.CTkFrame(field_frame, fg_color="transparent")
         input_container.pack(fill="x")
 
-        entry = ctk.CTkEntry(
-            input_container,
-            placeholder_text=label_text,
-            show="*" if is_secret else "",
-            height=38,
-            font=ctk.CTkFont(size=13),
-            corner_radius=8,
-            fg_color="#13141C",
-            border_color="#2A2D3D",
-            text_color="#FFFFFF",
-            placeholder_text_color="#55596B",
-        )
-        entry.pack(side="left", fill="x", expand=True)
-        entry.insert(0, str(self._config.get(key, "")))
-        self._entries[key] = entry
+        current_value = self._config.get(key, "")
+        is_boolean = key == "enable_fallback_artwork"
 
-        if is_secret:
-            toggle_btn = ctk.CTkButton(
+        if is_boolean:
+            checkbox = ctk.CTkCheckBox(
                 input_container,
-                text="👁",
-                width=38,
-                height=38,
-                fg_color="#13141C",
-                hover_color="#222532",
+                text="",
+                font=ctk.CTkFont(size=13),
+                fg_color="#00F5D4",
+                hover_color="#00D2B4",
                 border_color="#2A2D3D",
-                border_width=1,
-                corner_radius=8,
-                text_color="#8F94A6",
-                command=lambda k=key: self._toggle_secret_visibility(k),
+                checkbox_width=20,
+                checkbox_height=20,
+                corner_radius=4,
             )
-            toggle_btn.pack(side="right", padx=(6, 0))
-            self._toggle_btns[key] = toggle_btn
+            checkbox.pack(side="left")
+            if current_value in (True, "true", "True", "1", 1):
+                checkbox.select()
+            else:
+                checkbox.deselect()
+            self._entries[key] = checkbox
+        else:
+            entry = ctk.CTkEntry(
+                input_container,
+                placeholder_text=label_text,
+                show="*" if is_secret else "",
+                height=38,
+                font=ctk.CTkFont(size=13),
+                corner_radius=8,
+                fg_color="#13141C",
+                border_color="#2A2D3D",
+                text_color="#FFFFFF",
+                placeholder_text_color="#55596B",
+            )
+            entry.pack(side="left", fill="x", expand=True)
+            entry.insert(0, str(current_value))
+            self._entries[key] = entry
+
+            if is_secret:
+                toggle_btn = ctk.CTkButton(
+                    input_container,
+                    text="👁",
+                    width=38,
+                    height=38,
+                    fg_color="#13141C",
+                    hover_color="#222532",
+                    border_color="#2A2D3D",
+                    border_width=1,
+                    corner_radius=8,
+                    text_color="#8F94A6",
+                    command=lambda k=key: self._toggle_secret_visibility(k),
+                )
+                toggle_btn.pack(side="right", padx=(6, 0))
+                self._toggle_btns[key] = toggle_btn
 
     def _toggle_secret_visibility(self, key: str) -> None:
         entry = self._entries.get(key)
@@ -278,16 +301,19 @@ class ConfigWindow:
 
     def _on_save(self) -> None:
         new_config = {}
-        for key, entry in self._entries.items():
-            value = entry.get().strip()
-            if key == "poll_interval":
-                try:
-                    new_config[key] = int(value) if value else 30
-                except ValueError:
-                    self._set_status("Intervalo debe ser un número entero", error=True)
-                    return
+        for key, widget in self._entries.items():
+            if key == "enable_fallback_artwork":
+                new_config[key] = widget.get() == 1
             else:
-                new_config[key] = value
+                value = widget.get().strip()
+                if key == "poll_interval":
+                    try:
+                        new_config[key] = int(value) if value else 30
+                    except ValueError:
+                        self._set_status("Intervalo debe ser un número entero", error=True)
+                        return
+                else:
+                    new_config[key] = value
 
         required = ["lastfm_username", "lastfm_api_key", "discord_client_id"]
         missing = [k for k in required if not new_config.get(k)]

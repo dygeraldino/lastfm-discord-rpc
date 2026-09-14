@@ -86,6 +86,10 @@ def build_executable() -> None:
         "--hidden-import=src.daemon.signal_handler",
         "--hidden-import=src.application.use_cases.sync_presence",
         "--hidden-import=src.infrastructure.providers.lastfm_client",
+        "--hidden-import=src.infrastructure.providers.musicbrainz_client",
+        "--hidden-import=src.infrastructure.providers.deezer_client",
+        "--hidden-import=src.infrastructure.providers.fallback_artwork_provider",
+        "--hidden-import=src.infrastructure.persistence.json_artwork_cache_repository",
         "--hidden-import=src.infrastructure.publishers.discord_rpc",
         "--hidden-import=config.settings",
         "--hidden-import=config.logging_config",
@@ -106,6 +110,19 @@ def build_executable() -> None:
         print(f"\nPyInstaller build successful!")
         print(f"Executable: {exe_path}")
         print(f"Size: {exe_path.stat().st_size / (1024*1024):.1f} MB")
+
+        # Create portable version copy for GitHub Releases
+        app_version = "1.0.1"
+        iss_script = project_root / "installer.iss"
+        if iss_script.exists():
+            for line in iss_script.read_text(encoding="utf-8").splitlines():
+                if line.startswith("#define AppVersion"):
+                    app_version = line.split('"')[1]
+                    break
+
+        portable_path = dist_dir / f"LastfmPresence_Portable_v{app_version}.exe"
+        shutil.copy2(exe_path, portable_path)
+        print(f"Portable Executable created: {portable_path}")
     else:
         print("Error: Executable not found in dist/")
         sys.exit(1)

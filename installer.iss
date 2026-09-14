@@ -3,7 +3,7 @@
 ; Requires Inno Setup 6.2+ / Inno Setup 7+
 
 #define AppName "LastfmPresence"
-#define AppVersion "1.0.0"
+#define AppVersion "1.0.1"
 #define AppPublisher "dygeraldino"
 #define AppURL "https://github.com/dygeraldino/lastfm-discord-rpc"
 #define AppExeName "LastfmPresence.exe"
@@ -19,7 +19,7 @@ DefaultDirName={localappdata}\Programs\{#AppName}
 DefaultGroupName={#AppName}
 AllowNoIcons=true
 OutputDir=dist
-OutputBaseFilename={#AppName}_Setup_{#AppVersion}
+OutputBaseFilename={#AppName}_Setup_v{#AppVersion}_x64
 SetupIconFile=src/presentation/gui/assets/icon.ico
 Compression=lzma2/ultra64
 SolidCompression=true
