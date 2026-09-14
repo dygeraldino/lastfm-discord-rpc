@@ -100,7 +100,7 @@ class TestDiscordRpcPublisher:
         assert call_kwargs["details"] == "Test Song"
         assert call_kwargs["state"] == "by Test Artist"
         assert call_kwargs["large_image"] == "https://example.com/art.jpg"
-        assert call_kwargs["large_text"] == "Test Artist - Test Song"
+        assert call_kwargs["large_text"] == "Test Album"
         assert call_kwargs["small_image"] == "lastfm"
         assert call_kwargs["small_text"] == "Last.fm"
         assert call_kwargs["start"] == int(datetime(2024, 1, 1, 12, 0, 0).timestamp())

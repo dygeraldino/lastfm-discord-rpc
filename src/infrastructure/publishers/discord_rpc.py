@@ -1,5 +1,5 @@
 import asyncio
-from pypresence import Presence
+from pypresence import Presence, ActivityType
 from pypresence.exceptions import DiscordNotFound, PipeClosed, InvalidID
 from src.domain.interfaces.presence_publisher import PresencePublisher
 from src.domain.entities.track import Track
@@ -93,9 +93,10 @@ class DiscordRpcPublisher(PresencePublisher):
             raise PublisherError("Discord client not initialized")
 
         large_image = track.artwork_url if track.artwork_url else None
-        large_text = f"{track.artist} - {track.title}"[:128] if large_image else None
+        large_text = track.album[:128] if (large_image and track.album) else None
 
         kwargs = {
+            "activity_type": ActivityType.LISTENING,
             "details": track.title[:128],
             "state": f"by {track.artist}"[:128],
             "small_image": "lastfm",
@@ -104,6 +105,7 @@ class DiscordRpcPublisher(PresencePublisher):
         }
         if large_image:
             kwargs["large_image"] = large_image
+        if large_text:
             kwargs["large_text"] = large_text
 
         if settings.enable_rich_presence_buttons and track.button_urls:
