@@ -41,7 +41,8 @@ python build.py
 ### Entry Points
 
 - `main.py` - Application bootstrap, single-instance mutex, config check, tray app
-- `src/presentation/gui/main_window.py` - Config GUI (first run)
+- `src/presentation/gui/player_window.py` - Player/now-playing surface (first window from the tray)
+- `src/presentation/gui/main_window.py` - Settings window (gear or tray menu; first run)
 - `src/daemon/runner.py` - Background polling loop
 
 ### Config Priority (highest first)
@@ -99,17 +100,19 @@ List in `build.py`. Add new internal modules here if import errors occur in buil
 | `build.py`                                                 | PyInstaller + Inno Setup build script     |
 | `installer.iss`                                            | Inno Setup installer script               |
 | `src/daemon/runner.py`                                     | Polling loop with graceful shutdown       |
-| `src/presentation/gui/main_window.py`                      | Config GUI (customtkinter)                |
+| `src/presentation/gui/player_window.py`                    | Player/now-playing window + per-song covers |
+| `src/presentation/gui/main_window.py`                      | Settings window (customtkinter)           |
+| `src/presentation/gui/theme.py`                            | Palette, fonts, icons, cover rendering    |
+| `src/infrastructure/providers/lastfm_recent_tracks.py`     | Recent-tracks feed used by the player     |
 | `src/infrastructure/persistence/json_config_repository.py` | JSON config at `%APPDATA%`                |
 | `src/domain/interfaces/artwork_provider.py`                | Fallback artwork provider interface       |
 | `src/infrastructure/providers/deezer_client.py`           | Deezer API provider (primary CDN fallback)|
 | `src/infrastructure/providers/musicbrainz_client.py`       | MusicBrainz + Cover Art Archive provider  |
 | `src/infrastructure/providers/fallback_artwork_provider.py` | Composite artwork provider (Cache -> Deezer -> MB) |
 | `src/infrastructure/persistence/json_artwork_cache_repository.py` | Persistent artwork cache at `%APPDATA%` |
-| `src/application/services/candidate_artwork_service.py`     | Resolves base/Deezer/MusicBrainz candidates for the customizer |
+| `src/application/services/candidate_artwork_service.py`     | Resolves base/Deezer/MusicBrainz candidates for the player |
 | `src/application/services/override_aware_music_provider.py` | Decorator that applies per-song artwork overrides |
 | `src/infrastructure/persistence/json_song_override_repository.py` | Per-song overrides at `%APPDATA%` |
-| `src/presentation/gui/song_override_window.py`              | Per-song artwork customization window    |
 
 ## Fallback Artwork Feature
 
@@ -123,18 +126,18 @@ When Last.fm returns a track without artwork (or returns Last.fm default placeho
 - **Cache**: Stores positive image URLs or `null` for known misses (to avoid redundant API requests)
 - **Rate limiting**: Enforces respectful API rate limits (Deezer 0.5s, MusicBrainz 1.0s)
 - **User-Agent**: `LastfmPresence/1.0.0 (https://github.com/dygeraldino/lastfm-discord-rpc)`
-- **GUI toggle**: Checkbox in config window to enable/disable if desired
+- **GUI toggle**: Switch in **Ajustes** to enable/disable if desired
 - **Scope**: Album/track artwork only (`large_image` in Discord RPC)
 
 ## Per-Song Artwork Overrides
 
-The config window includes **"Personalizar carátulas…"**, which lets the user pick the artwork source for a specific song:
+The player (**Abrir reproductor** from the tray, or a click on the tray icon) lets the user pick the artwork source for the song currently shown under **Carátula**:
 
 - **Identity**: `artist + title` (album is ignored, so live/remaster variants share the override)
 - **Sources**: Last.fm base image, Deezer, or MusicBrainz/Cover Art Archive
-- **Preview**: Shows the three candidates with thumbnails; missing candidates are disabled
+- **Preview**: Three source tiles with thumbnails; missing candidates are disabled
 - **Storage**: `%APPDATA%\LastfmPresence\song_overrides.json` (`{source, url}` per slugified `artist:title` key)
 - **Precedence**: An override wins over the normal pipeline; without an override the fallback flow is untouched
 - **Runtime**: `OverrideAwareMusicProvider` wraps `LastFmClient` and re-reads the override file on every poll, so edits apply to the next detected track change
-- **Removal**: "Quitar" in the customization window returns the song to the automatic pipeline
+- **Removal**: "Quitar" in the player, or the footer manager listing every saved override
 - **No local files**: Only online URLs are used (Discord Rich Presence requires a reachable image URL)

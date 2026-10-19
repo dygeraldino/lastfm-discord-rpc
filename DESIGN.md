@@ -50,7 +50,8 @@ ring or tint is paired with a word.
 
 - Outer padding 28–32px; sections separated by 1px hairlines
   (`fg_color=BORDER`, `corner_radius=0`).
-- Player: 60px app bar (logo 26 + wordmark, refresh + gear right) → body
+- Player: 920×700 canvas (min 860×680). 60px app bar (logo 26 + wordmark,
+  refresh + gear right) → body
   (300px cover left radius 12; status dot 7, title, artist, album,
   92×30 equalizer, cover picker with three 64px source tiles) → recent
   shelf (six 72px covers, radius 8) → 44px footer.
@@ -68,8 +69,11 @@ ring or tint is paired with a word.
 - **Source tile**: thumb radius 7; selected = 2px `ACCENT` border,
   `HOVER` fill, 9px check icon; unavailable = `INK` fill, "Sin portada",
   label `MUTED`, no cursor affordance.
-- **Shelf tile**: selected = 1px `ACCENT` border over `HOVER` fill;
-  whole tile clickable, `hand2` cursor.
+- **Shelf tile**: tiles show the truth per track — the currently playing
+  track mirrors whichever source the picker has chosen, the rest show their
+  per-song override's URL when one exists (else the Last.fm base image).
+  Selected = 1px `ACCENT` border over `HOVER` fill; whole tile clickable,
+  `hand2` cursor.
 
 ## Icons
 
@@ -84,6 +88,9 @@ No emoji inside windows; the native tray menu keeps Windows-style items.
 `SIN CONFIGURAR`, `SIN CONEXIÓN` (`ERROR` + copy naming the recovery).
 The cover picker shows only with a track selected; loading candidates
 announce themselves, keep the current info, and never dead-end silently.
+The save cycle is narrated end to end: guard → *Guardada* (disabled) +
+`Quitar`, footer count updates; removing — from the picker or the manager —
+resets the picker to the default source and says so.
 
 ## Motion
 

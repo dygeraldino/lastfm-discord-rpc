@@ -122,13 +122,19 @@ If you enable **"Hide recent listening information"** in your [Last.fm Privacy S
 | `enable_rich_presence_buttons` | `true`     | Show "Listen on Last.fm" and "View Artist" buttons |
 | `enable_fallback_artwork`      | `true`     | Enable Deezer & MusicBrainz fallback artwork lookup|
 
+### Player and Settings
+
+Click the tray icon (or **Abrir reproductor** in its menu) to open the player. It shows the current Last.fm track, a live equalizer, the most recent unique tracks, and the three artwork sources for the song. Closing the window hides it to the tray; the daemon keeps running.
+
+Use the gear in the player header to open **Ajustes** (or **Ajustes** in the tray menu). The settings window covers the Last.fm/Discord credentials, the poll interval and the fallback-artwork switch. Saving applies the changes and restarts the presence daemon without quitting the app.
+
 ### Per-Song Artwork
 
-Open the config window and click **"Personalizar carátulas…"**. Pick a recent track, preview the artwork available from Last.fm, Deezer and MusicBrainz, choose one, and save. The choice is stored in `%APPDATA%\LastfmPresence\song_overrides.json` and applied whenever that `artist + title` plays.
+Open the player, find the track under **Carátula**, preview the artwork available from Last.fm, Deezer and MusicBrainz, choose one, and press **Guardar carátula**. The choice is stored in `%APPDATA%\LastfmPresence\song_overrides.json` and applied whenever that `artist + title` plays. The footer link lists every saved override so you can remove them.
 
 - Overrides take precedence over the automatic fallback pipeline.
 - Songs without an override keep using the normal flow.
-- Use **"Quitar"** to delete an override and return the song to automatic artwork.
+- Use **Quitar** to delete an override and return the song to automatic artwork.
 - Only online image URLs are used, since Discord Rich Presence cannot display local files.
 
 ## Testing
@@ -148,7 +154,7 @@ Logs are written to `%APPDATA%\LastfmPresence\logs\`:
 - `daemon_YYYY-MM-DD.log` - All logs (rotated daily, kept 30 days)
 - `errors_YYYY-MM-DD.log` - Errors only (rotated daily, kept 90 days)
 
-Open logs from the system tray menu: **Open Logs**
+Open logs from the system tray menu: **Abrir logs**
 
 ## License
 

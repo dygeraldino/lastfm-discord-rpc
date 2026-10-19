@@ -439,8 +439,6 @@ class ConfigWindow:
         self._test_btn = ctk.CTkButton(
             buttons,
             text="Probar conexión",
-            image=theme.icon("refresh", 12, theme.LABEL),
-            compound="left",
             command=self._on_test_connection,
             width=160,
             height=40,

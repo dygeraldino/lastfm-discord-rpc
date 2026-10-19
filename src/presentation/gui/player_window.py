@@ -111,8 +111,8 @@ class PlayerWindow:
             self._root = ctk.CTk()
             self._root.title("LastfmPresence")
             self._root.configure(fg_color=theme.INK)
-            self._root.minsize(860, 660)
-            self._root.geometry("920x690")
+            self._root.minsize(860, 680)
+            self._root.geometry("920x700")
             self._root.resizable(True, True)
             theme.set_window_icon(self._root)
 
@@ -140,7 +140,7 @@ class PlayerWindow:
             return
         try:
             self._root.update_idletasks()
-            width, height = 920, 690
+            width, height = 920, 700
             scale = ctk.ScalingTracker.get_window_scaling(self._root)
             screen_width = int(self._root.winfo_screenwidth() * scale)
             screen_height = int(self._root.winfo_screenheight() * scale)
@@ -616,7 +616,12 @@ class PlayerWindow:
             if track.key in seen:
                 continue
             seen.add(track.key)
-            image = theme.load_pil_image(track.artwork_url) if track.artwork_url else None
+            try:
+                override = self._overrides.get(track.artist, track.title)
+            except Exception:
+                override = None
+            source_url = override.url if override is not None else track.artwork_url
+            image = theme.load_pil_image(source_url) if source_url else None
             if image is not None or track.key not in covers:
                 covers[track.key] = image
             if len(seen) >= SHELF_LIMIT:
@@ -774,7 +779,7 @@ class PlayerWindow:
             )
             tile.grid(row=0, column=index, sticky="nw", padx=(0, 10))
 
-            cover_pil = self._recent_pil.get(track.key)
+            cover_pil = self._shelf_cover_pil(track)
             cover = theme.pil_to_ctk(
                 theme.square_cover(cover_pil, RECENT_COVER, 8),
                 (RECENT_COVER, RECENT_COVER),
@@ -823,6 +828,17 @@ class PlayerWindow:
                     widget.configure(cursor="hand2")
                 except Exception:
                     pass
+
+    def _shelf_cover_pil(self, track: RecentTrack) -> Optional[Image.Image]:
+        if (
+            self._selected is not None
+            and track.key == self._selected.key
+            and self._choice
+        ):
+            image = self._candidate_images.get(self._choice)
+            if image is not None:
+                return image
+        return self._recent_pil.get(track.key)
 
     def _current_cover_pil(self) -> Optional[Image.Image]:
         if self._choice:
@@ -1060,6 +1076,7 @@ class PlayerWindow:
         self._choose_default_source()
         self._render_tiles()
         self._set_cover(self._current_cover_pil())
+        self._render_recent()
         self._update_save_state()
         if not any(urls.values()):
             self._note("No se encontraron carátulas alternativas.")
@@ -1180,6 +1197,7 @@ class PlayerWindow:
         self._choice = source
         self._render_tiles()
         self._set_cover(self._current_cover_pil())
+        self._render_recent()
         self._update_save_state()
         self._clear_note()
 
@@ -1246,6 +1264,8 @@ class PlayerWindow:
 
         self._override = override
         self._render_tiles()
+        self._set_cover(self._current_cover_pil())
+        self._render_recent()
         self._update_save_state()
         self._note("Guardada. Discord la usará cuando cambie la pista.")
         self._update_footer()
@@ -1266,6 +1286,7 @@ class PlayerWindow:
         self._choose_default_source()
         self._render_tiles()
         self._set_cover(self._current_cover_pil())
+        self._render_recent()
         self._update_save_state()
         if removed:
             self._note("Personalización eliminada. Se usará la carátula automática.")
@@ -1309,9 +1330,15 @@ class PlayerWindow:
 
     def _on_overrides_changed(self) -> None:
         if self._selected is not None:
+            previously = self._override
             self._override = self._overrides.get(self._selected.artist, self._selected.title)
-            self._choose_default_source()
+            if previously is not None and self._override is None:
+                self._choice = None
+                self._choose_default_source()
+                self._note("Personalización eliminada. Se usará la carátula automática.")
             self._render_tiles()
+            self._set_cover(self._current_cover_pil())
+            self._render_recent()
             self._update_save_state()
         self._update_footer()
 
