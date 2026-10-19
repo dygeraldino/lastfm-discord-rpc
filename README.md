@@ -10,7 +10,7 @@
 
 ### Method 1: Download Pre-compiled Release (Recommended)
 
-1. Download `LastfmPresence_Setup_v1.0.1_x64.exe` (or `LastfmPresence_Portable_v1.0.1.exe`) from the latest [release](https://github.com/dygeraldino/lastfm-discord-rpc/releases)
+1. Download `LastfmPresence_Setup_v1.0.2_x64.exe` (or `LastfmPresence_Portable_v1.0.2.exe`) from the latest [release](https://github.com/dygeraldino/lastfm-discord-rpc/releases)
 2. Run the installer or launch the portable executable directly
 3. Choose whether to start automatically at login (Installer option)
 4. Launch from Start Menu or system tray
@@ -121,6 +121,15 @@ If you enable **"Hide recent listening information"** in your [Last.fm Privacy S
 | `log_level`                    | `INFO`     | Log level (DEBUG, INFO, WARNING, ERROR)            |
 | `enable_rich_presence_buttons` | `true`     | Show "Listen on Last.fm" and "View Artist" buttons |
 | `enable_fallback_artwork`      | `true`     | Enable Deezer & MusicBrainz fallback artwork lookup|
+
+### Per-Song Artwork
+
+Open the config window and click **"Personalizar carátulas…"**. Pick a recent track, preview the artwork available from Last.fm, Deezer and MusicBrainz, choose one, and save. The choice is stored in `%APPDATA%\LastfmPresence\song_overrides.json` and applied whenever that `artist + title` plays.
+
+- Overrides take precedence over the automatic fallback pipeline.
+- Songs without an override keep using the normal flow.
+- Use **"Quitar"** to delete an override and return the song to automatic artwork.
+- Only online image URLs are used, since Discord Rich Presence cannot display local files.
 
 ## Testing
 

@@ -8,7 +8,10 @@ from config.logging_config import setup_logging, get_logger
 from src.infrastructure.providers.lastfm_client import LastFmClient
 from src.infrastructure.providers.fallback_artwork_provider import FallbackArtworkProvider
 from src.domain.interfaces.artwork_provider import ArtworkProvider
+from src.domain.interfaces.music_provider import MusicProvider
 from src.infrastructure.persistence.json_artwork_cache_repository import JsonArtworkCacheRepository
+from src.infrastructure.persistence.json_song_override_repository import JsonSongOverrideRepository
+from src.application.services.override_aware_music_provider import OverrideAwareMusicProvider
 from src.infrastructure.publishers.discord_rpc import DiscordRpcPublisher
 from src.application.use_cases.sync_presence import SyncPresenceUseCase
 from src.daemon.runner import DaemonRunner
@@ -31,7 +34,7 @@ _mutex_handle = None
 
 _runner: DaemonRunner | None = None
 _presence_publisher: DiscordRpcPublisher | None = None
-_music_provider: LastFmClient | None = None
+_music_provider: MusicProvider | None = None
 _artwork_provider: ArtworkProvider | None = None
 _signal_handler: DaemonSignalHandler | None = None
 
@@ -57,7 +60,11 @@ async def _daemon_main() -> None:
     logger.info("Starting Last.fm Discord Rich Presence Daemon")
 
     _artwork_provider = FallbackArtworkProvider(JsonArtworkCacheRepository())
-    _music_provider = LastFmClient(artwork_provider=_artwork_provider)
+    _lastfm_client = LastFmClient(artwork_provider=_artwork_provider)
+    _music_provider = OverrideAwareMusicProvider(
+        inner=_lastfm_client,
+        overrides=JsonSongOverrideRepository(),
+    )
     _presence_publisher = DiscordRpcPublisher()
 
     await _presence_publisher.connect()

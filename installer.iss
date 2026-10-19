@@ -3,7 +3,7 @@
 ; Requires Inno Setup 6.2+ / Inno Setup 7+
 
 #define AppName "LastfmPresence"
-#define AppVersion "1.0.1"
+#define AppVersion "1.0.2"
 #define AppPublisher "dygeraldino"
 #define AppURL "https://github.com/dygeraldino/lastfm-discord-rpc"
 #define AppExeName "LastfmPresence.exe"

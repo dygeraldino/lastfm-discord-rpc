@@ -4,7 +4,7 @@
 
 Windows desktop app bridging Last.fm listening activity to Discord Rich Presence. Clean Architecture (Domain, Application, Infrastructure, Daemon, Presentation). Uses system tray + dark-mode config GUI. Outputs standalone executable via PyInstaller, optional Inno Setup installer.
 
-**Version: 1.0.1** — Adds fallback artwork via MusicBrainz + Cover Art Archive when Last.fm returns no cover.
+**Version: 1.0.2** — Adds per-song artwork overrides (Last.fm base, Deezer or MusicBrainz) from the config window, on top of the existing fallback artwork pipeline.
 
 ## Key Commands
 
@@ -32,8 +32,8 @@ python build.py
 
 # Outputs:
 # dist/LastfmPresence.exe
-# dist/LastfmPresence_Portable_v1.0.1.exe
-# dist/LastfmPresence_Setup_v1.0.1_x64.exe (if Inno Setup found)
+# dist/LastfmPresence_Portable_v1.0.2.exe
+# dist/LastfmPresence_Setup_v1.0.2_x64.exe (if Inno Setup found)
 ```
 
 ## Architecture Notes
@@ -106,6 +106,10 @@ List in `build.py`. Add new internal modules here if import errors occur in buil
 | `src/infrastructure/providers/musicbrainz_client.py`       | MusicBrainz + Cover Art Archive provider  |
 | `src/infrastructure/providers/fallback_artwork_provider.py` | Composite artwork provider (Cache -> Deezer -> MB) |
 | `src/infrastructure/persistence/json_artwork_cache_repository.py` | Persistent artwork cache at `%APPDATA%` |
+| `src/application/services/candidate_artwork_service.py`     | Resolves base/Deezer/MusicBrainz candidates for the customizer |
+| `src/application/services/override_aware_music_provider.py` | Decorator that applies per-song artwork overrides |
+| `src/infrastructure/persistence/json_song_override_repository.py` | Per-song overrides at `%APPDATA%` |
+| `src/presentation/gui/song_override_window.py`              | Per-song artwork customization window    |
 
 ## Fallback Artwork Feature
 
@@ -121,3 +125,16 @@ When Last.fm returns a track without artwork (or returns Last.fm default placeho
 - **User-Agent**: `LastfmPresence/1.0.0 (https://github.com/dygeraldino/lastfm-discord-rpc)`
 - **GUI toggle**: Checkbox in config window to enable/disable if desired
 - **Scope**: Album/track artwork only (`large_image` in Discord RPC)
+
+## Per-Song Artwork Overrides
+
+The config window includes **"Personalizar carátulas…"**, which lets the user pick the artwork source for a specific song:
+
+- **Identity**: `artist + title` (album is ignored, so live/remaster variants share the override)
+- **Sources**: Last.fm base image, Deezer, or MusicBrainz/Cover Art Archive
+- **Preview**: Shows the three candidates with thumbnails; missing candidates are disabled
+- **Storage**: `%APPDATA%\LastfmPresence\song_overrides.json` (`{source, url}` per slugified `artist:title` key)
+- **Precedence**: An override wins over the normal pipeline; without an override the fallback flow is untouched
+- **Runtime**: `OverrideAwareMusicProvider` wraps `LastFmClient` and re-reads the override file on every poll, so edits apply to the next detected track change
+- **Removal**: "Quitar" in the customization window returns the song to the automatic pipeline
+- **No local files**: Only online URLs are used (Discord Rich Presence requires a reachable image URL)

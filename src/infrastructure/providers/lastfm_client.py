@@ -5,6 +5,7 @@ from src.domain.interfaces.music_provider import MusicProvider
 from src.domain.interfaces.artwork_provider import ArtworkProvider
 from src.domain.entities.track import Track
 from src.domain.exceptions import ProviderError
+from src.infrastructure.providers.artwork_utils import is_placeholder_artwork
 from config.settings import settings
 from config.logging_config import get_logger
 from datetime import datetime
@@ -115,14 +116,7 @@ class LastFmClient(MusicProvider):
 
     @staticmethod
     def _is_placeholder_artwork(url: str) -> bool:
-        if not url:
-            return True
-        known_placeholders = (
-            "2a96cbd8b46e442fc41c2b86b821562f",  # Default Last.fm star track/album image
-            "c6f707e6e835197e0bdc2870105e35ed",  # Default Last.fm artist image
-            "4128a60df9657d23539f78077e2f5763",  # Additional default image variant
-        )
-        return any(p in url for p in known_placeholders)
+        return is_placeholder_artwork(url)
 
     async def _parse_track(self, data: dict) -> Optional[Track]:
         if "error" in data:

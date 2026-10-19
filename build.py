@@ -86,10 +86,19 @@ def build_executable() -> None:
         "--hidden-import=src.daemon.signal_handler",
         "--hidden-import=src.application.use_cases.sync_presence",
         "--hidden-import=src.infrastructure.providers.lastfm_client",
+        "--hidden-import=src.infrastructure.providers.lastfm_recent_tracks",
+        "--hidden-import=src.infrastructure.providers.artwork_utils",
         "--hidden-import=src.infrastructure.providers.musicbrainz_client",
         "--hidden-import=src.infrastructure.providers.deezer_client",
         "--hidden-import=src.infrastructure.providers.fallback_artwork_provider",
         "--hidden-import=src.infrastructure.persistence.json_artwork_cache_repository",
+        "--hidden-import=src.infrastructure.persistence.json_song_override_repository",
+        "--hidden-import=src.domain.entities.song_override",
+        "--hidden-import=src.domain.interfaces.song_override_repository",
+        "--hidden-import=src.application.services.candidate_artwork_service",
+        "--hidden-import=src.application.services.override_aware_music_provider",
+        "--hidden-import=src.presentation.gui.theme",
+        "--hidden-import=src.presentation.gui.player_window",
         "--hidden-import=src.infrastructure.publishers.discord_rpc",
         "--hidden-import=config.settings",
         "--hidden-import=config.logging_config",
@@ -112,7 +121,7 @@ def build_executable() -> None:
         print(f"Size: {exe_path.stat().st_size / (1024*1024):.1f} MB")
 
         # Create portable version copy for GitHub Releases
-        app_version = "1.0.1"
+        app_version = "1.0.2"
         iss_script = project_root / "installer.iss"
         if iss_script.exists():
             for line in iss_script.read_text(encoding="utf-8").splitlines():

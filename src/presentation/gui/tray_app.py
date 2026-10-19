@@ -1,24 +1,39 @@
+"""System tray entry point and window orchestration."""
+
+from __future__ import annotations
+
 import asyncio
-import threading
-import sys
 import os
+import subprocess
+import sys
+import threading
+import webbrowser
 from pathlib import Path
 from typing import Callable, Optional
+
 import pystray
 from PIL import Image, ImageDraw
+
 from config.logging_config import get_logger, get_logs_dir
 from src.infrastructure.persistence.json_config_repository import JsonConfigRepository
 from src.presentation.gui.main_window import run_config_window
+from src.presentation.gui.player_window import PlayerWindow, run_player_window
 
 logger = get_logger(__name__)
 
 
 def _create_default_icon() -> Image.Image:
-    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(img)
-    draw.ellipse([8, 8, 56, 56], fill=(0, 245, 212, 255))
-    draw.text((20, 18), "♪", fill=(11, 14, 20, 255), font_size=32)
-    return img
+    """Fallback vinyl mark, drawn without relying on emoji fonts."""
+    size = 64
+    image = Image.new("RGBA", (size, size), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    mint = (111, 255, 228, 255)
+    ink = (6, 13, 11, 255)
+    draw.ellipse([5, 5, 59, 59], fill=ink)
+    draw.ellipse([9, 9, 55, 55], fill=mint)
+    draw.ellipse([23, 23, 41, 41], fill=ink)
+    draw.ellipse([30, 30, 34, 34], fill=mint)
+    return image
 
 
 def _get_assets_dir() -> Path:
@@ -52,23 +67,28 @@ class TrayApp:
         self._shutdown_callback = shutdown_callback
         self._icon: Optional[pystray.Icon] = None
         self._daemon_thread: Optional[threading.Thread] = None
+        self._player_thread: Optional[threading.Thread] = None
         self._running = False
         self._repo = JsonConfigRepository()
 
+    # ------------------------------------------------------------ lifecycle --
     def run(self) -> None:
         self._running = True
         self._start_daemon_thread()
         self._setup_tray()
+        assert self._icon is not None
         self._icon.run()
 
     def _start_daemon_thread(self) -> None:
-        def run_daemon_loop():
+        def run_daemon_loop() -> None:
             try:
                 asyncio.run(self._daemon_runner_coro())
-            except Exception as e:
-                logger.error(f"Daemon thread error: {e}", exc_info=True)
+            except Exception:
+                logger.exception("Daemon thread error")
 
-        self._daemon_thread = threading.Thread(target=run_daemon_loop, daemon=True, name="DaemonThread")
+        self._daemon_thread = threading.Thread(
+            target=run_daemon_loop, daemon=True, name="DaemonThread"
+        )
         self._daemon_thread.start()
         logger.info("Daemon thread started")
 
@@ -85,35 +105,72 @@ class TrayApp:
         self._stop_daemon_thread()
         self._start_daemon_thread()
 
+    # ---------------------------------------------------------------- tray ---
     def _setup_tray(self) -> None:
         icon_image = _load_tray_icon()
 
         menu = pystray.Menu(
-            pystray.MenuItem("⚙️ Configuración", self._on_config_click, default=True),
-            pystray.MenuItem("📋 Abrir Logs", self._on_open_logs),
+            pystray.MenuItem(
+                "Abrir reproductor",
+                self._on_player_click,
+                default=True,
+            ),
+            pystray.MenuItem("Ajustes", self._on_config_click),
+            pystray.MenuItem("Abrir logs", self._on_open_logs),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("🔄 Buscar actualizaciones", self._on_check_updates),
+            pystray.MenuItem("Buscar actualizaciones", self._on_check_updates),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("❌ Salir", self._on_exit),
+            pystray.MenuItem("Salir", self._on_exit),
         )
 
         self._icon = pystray.Icon(
             "LastfmPresence",
             icon_image,
-            "LastfmPresence - Last.fm → Discord",
+            "LastfmPresence - Reproductor de Last.fm",
             menu,
         )
 
+    # ------------------------------------------------------------- handlers --
+    def _on_player_click(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
+        self._show_player()
+
+    def _show_player(self) -> None:
+        logger.info("Opening player window from tray")
+        if PlayerWindow.request_show():
+            return
+
+        if self._player_thread is not None and self._player_thread.is_alive():
+            return
+
+        self._player_thread = threading.Thread(
+            target=self._run_player_window,
+            daemon=True,
+            name="PlayerWindow",
+        )
+        self._player_thread.start()
+
+    def _run_player_window(self) -> None:
+        run_player_window(on_open_config=self._open_config)
+
     def _on_config_click(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
-        logger.info("Opening config window from tray")
-        threading.Thread(target=self._run_config_window, daemon=True).start()
+        self._open_config()
+
+    def _open_config(self) -> None:
+        logger.info("Opening settings window")
+        threading.Thread(
+            target=self._run_config_window,
+            daemon=True,
+            name="ConfigWindow",
+        ).start()
 
     def _run_config_window(self) -> None:
-        def on_config_saved():
+        def on_config_saved() -> None:
             logger.info("Config saved, restarting daemon...")
             from config.settings import reload_settings
+
             reload_settings()
             self._restart_daemon_thread()
+            PlayerWindow.request_refresh()
 
         run_config_window(on_save_callback=on_config_saved)
 
@@ -123,13 +180,11 @@ class TrayApp:
             if sys.platform == "win32":
                 os.startfile(logs_dir)
             else:
-                import subprocess
                 subprocess.Popen(["xdg-open", str(logs_dir)])
         else:
             logger.warning("Logs directory does not exist")
 
     def _on_check_updates(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
-        import webbrowser
         webbrowser.open("https://github.com/dygeraldino/lastfm-discord-rpc/releases")
 
     def _on_exit(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:

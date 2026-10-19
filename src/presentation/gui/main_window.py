@@ -1,30 +1,30 @@
-import customtkinter as ctk
+"""Settings window for LastfmPresence.
+
+The player is the everyday surface; this window is reached from its gear (or
+from the tray menu) and carries only the connection and behaviour controls.
+"""
+
+from __future__ import annotations
+
 import threading
-import sys
+import webbrowser
+from typing import Optional
+
+import customtkinter as ctk
 import httpx
-from pathlib import Path
-from PIL import Image
-from src.infrastructure.persistence.json_config_repository import JsonConfigRepository
+
 from config.logging_config import get_logger
+from src.infrastructure.persistence.json_config_repository import JsonConfigRepository
+from src.presentation.gui import theme
 
 logger = get_logger(__name__)
 
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("blue")
-
-
-def _get_assets_dir() -> Path:
-    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
-        base_dir = Path(sys._MEIPASS)
-        if (base_dir / "src" / "presentation" / "gui" / "assets").exists():
-            return base_dir / "src" / "presentation" / "gui" / "assets"
-        elif (base_dir / "assets").exists():
-            return base_dir / "assets"
-    return Path(__file__).parent / "assets"
+LASTFM_API_KEY_URL = "https://www.last.fm/api/account/create"
+DISCORD_APPS_URL = "https://discord.com/developers/applications"
 
 
 class ConfigWindow:
-    _active_instance: "ConfigWindow | None" = None
+    _active_instance: "Optional[ConfigWindow]" = None
     _lock = threading.Lock()
 
     def __init__(self, on_save_callback=None) -> None:
@@ -32,13 +32,14 @@ class ConfigWindow:
         self._saved = False
         self._repo = JsonConfigRepository()
         self._config = self._repo.load()
-        self._root: ctk.CTk | None = None
-        self._entries: dict[str, ctk.CTkEntry] = {}
+        self._root: Optional[ctk.CTk] = None
+        self._entries: dict[str, object] = {}
         self._toggle_btns: dict[str, ctk.CTkButton] = {}
-        self._status_label: ctk.CTkLabel | None = None
-        self._save_btn: ctk.CTkButton | None = None
-        self._test_btn: ctk.CTkButton | None = None
+        self._status_label: Optional[ctk.CTkLabel] = None
+        self._save_btn: Optional[ctk.CTkButton] = None
+        self._test_btn: Optional[ctk.CTkButton] = None
 
+    # ------------------------------------------------------------ lifecycle --
     def focus(self) -> None:
         if self._root:
             try:
@@ -47,15 +48,19 @@ class ConfigWindow:
                 logger.warning(f"Error focusing window: {e}")
 
     def _bring_to_front(self, event=None) -> None:
-        if self._root:
-            try:
-                self._root.deiconify()
-                self._root.lift()
-                self._root.focus_force()
-                self._root.attributes("-topmost", True)
-                self._root.after(100, lambda: self._root.attributes("-topmost", False) if self._root else None)
-            except Exception as e:
-                logger.warning(f"Error bringing window to front: {e}")
+        if not self._root:
+            return
+        try:
+            self._root.deiconify()
+            self._root.lift()
+            self._root.focus_force()
+            self._root.attributes("-topmost", True)
+            self._root.after(
+                100,
+                lambda: self._root.attributes("-topmost", False) if self._root else None,
+            )
+        except Exception as e:
+            logger.warning(f"Error bringing window to front: {e}")
 
     def show(self) -> bool:
         with ConfigWindow._lock:
@@ -68,22 +73,18 @@ class ConfigWindow:
         try:
             self._saved = False
             self._root = ctk.CTk()
-            self._root.title("LastfmPresence - Configuración")
-            self._root.geometry("540x710")
+            self._root.title("LastfmPresence - Ajustes")
+            self._root.geometry("620x640")
+            self._root.minsize(620, 620)
             self._root.resizable(False, False)
-            self._root.configure(fg_color="#0F1015")
+            self._root.configure(fg_color=theme.INK)
             self._root.protocol("WM_DELETE_WINDOW", self._on_close)
             self._root.bind("<<FocusWindow>>", self._bring_to_front)
-            self._root.bind("<<CloseWindow>>", lambda e: self._on_close())
+            self._root.bind("<Escape>", lambda _event: self._on_close())
+            theme.set_window_icon(self._root)
 
-            icon_path = _get_assets_dir() / "icon.ico"
-            if icon_path.exists():
-                try:
-                    self._root.iconbitmap(str(icon_path))
-                except Exception as e:
-                    logger.warning(f"Could not set window icon: {e}")
-
-            self._build_ui(icon_path)
+            self._build_ui()
+            self._center_window()
             self._root.mainloop()
             return self._saved
         finally:
@@ -91,203 +92,22 @@ class ConfigWindow:
                 if ConfigWindow._active_instance is self:
                     ConfigWindow._active_instance = None
 
-    def _build_ui(self, icon_path: Path) -> None:
-        main_frame = ctk.CTkFrame(
-            self._root,
-            corner_radius=16,
-            fg_color="#1A1C24",
-            border_color="#2A2D3D",
-            border_width=1,
-        )
-        main_frame.pack(fill="both", expand=True, padx=20, pady=20)
-
-        header_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        header_frame.pack(pady=(18, 10))
-
-        if icon_path.exists():
-            try:
-                pil_icon = Image.open(icon_path)
-                ctk_icon = ctk.CTkImage(light_image=pil_icon, dark_image=pil_icon, size=(48, 48))
-                logo_label = ctk.CTkLabel(header_frame, image=ctk_icon, text="")
-                logo_label.pack(pady=(0, 6))
-            except Exception as e:
-                logger.warning(f"Failed to render header logo: {e}")
-
-        title_label = ctk.CTkLabel(
-            header_frame,
-            text="LastfmPresence",
-            font=ctk.CTkFont(size=26, weight="bold"),
-            text_color="#00F5D4",
-        )
-        title_label.pack()
-
-        subtitle_label = ctk.CTkLabel(
-            header_frame,
-            text="Configuración de Last.fm + Discord Rich Presence",
-            font=ctk.CTkFont(size=12),
-            text_color="#8F94A6",
-        )
-        subtitle_label.pack(pady=(2, 0))
-
-        form_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        form_frame.pack(fill="x", padx=28, pady=8)
-
-        fields = [
-            ("lastfm_username", "Usuario Last.fm", False),
-            ("lastfm_api_key", "API Key Last.fm", True),
-            ("discord_client_id", "Discord Client ID", True),
-            ("poll_interval", "Intervalo de sondeo (seg)", False),
-            ("enable_fallback_artwork", "Buscar carátulas alternativas (Deezer / MusicBrainz)", False),
-        ]
-
-        for key, label_text, is_secret in fields:
-            self._create_field(form_frame, key, label_text, is_secret)
-
-        self._status_label = ctk.CTkLabel(
-            main_frame,
-            text="",
-            font=ctk.CTkFont(size=12),
-            text_color="#8F94A6",
-            wraplength=440,
-        )
-        self._status_label.pack(pady=(8, 4))
-
-        buttons_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        buttons_frame.pack(fill="x", padx=28, pady=(8, 12))
-
-        self._test_btn = ctk.CTkButton(
-            buttons_frame,
-            text="Probar Conexión",
-            command=self._on_test_connection,
-            height=42,
-            font=ctk.CTkFont(size=13, weight="bold"),
-            fg_color="#222532",
-            hover_color="#2C3040",
-            text_color="#E1E4ED",
-            corner_radius=10,
-            border_color="#2A2D3D",
-            border_width=1,
-        )
-        self._test_btn.pack(side="left", padx=(0, 8), fill="x", expand=True)
-
-        self._save_btn = ctk.CTkButton(
-            buttons_frame,
-            text="Guardar",
-            command=self._on_save,
-            height=42,
-            font=ctk.CTkFont(size=13, weight="bold"),
-            fg_color="#00F5D4",
-            hover_color="#00D2B4",
-            text_color="#090B10",
-            corner_radius=10,
-        )
-        self._save_btn.pack(side="right", padx=(8, 0), fill="x", expand=True)
-
-        links_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
-        links_frame.pack(pady=(0, 15))
-
-        lastfm_link = ctk.CTkLabel(
-            links_frame,
-            text="Obtener API Key Last.fm",
-            font=ctk.CTkFont(size=11, underline=True),
-            text_color="#00F5D4",
-            cursor="hand2",
-        )
-        lastfm_link.pack(side="left", padx=12)
-        lastfm_link.bind("<Button-1>", lambda e: self._open_url("https://www.last.fm/api/account/create"))
-
-        discord_link = ctk.CTkLabel(
-            links_frame,
-            text="Crear App Discord",
-            font=ctk.CTkFont(size=11, underline=True),
-            text_color="#5865F2",
-            cursor="hand2",
-        )
-        discord_link.pack(side="left", padx=12)
-        discord_link.bind("<Button-1>", lambda e: self._open_url("https://discord.com/developers/applications"))
-
-    def _create_field(self, parent: ctk.CTkFrame, key: str, label_text: str, is_secret: bool) -> None:
-        field_frame = ctk.CTkFrame(parent, fg_color="transparent")
-        field_frame.pack(fill="x", pady=6)
-
-        label = ctk.CTkLabel(
-            field_frame,
-            text=label_text,
-            font=ctk.CTkFont(size=12, weight="bold"),
-            text_color="#D0D4E0",
-            anchor="w",
-        )
-        label.pack(fill="x", pady=(0, 3))
-
-        input_container = ctk.CTkFrame(field_frame, fg_color="transparent")
-        input_container.pack(fill="x")
-
-        current_value = self._config.get(key, True if key == "enable_fallback_artwork" else "")
-        is_boolean = key == "enable_fallback_artwork"
-
-        if is_boolean:
-            checkbox = ctk.CTkCheckBox(
-                input_container,
-                text="",
-                font=ctk.CTkFont(size=13),
-                fg_color="#00F5D4",
-                hover_color="#00D2B4",
-                border_color="#2A2D3D",
-                checkbox_width=20,
-                checkbox_height=20,
-                corner_radius=4,
-            )
-            checkbox.pack(side="left")
-            if current_value in (True, "true", "True", "1", 1):
-                checkbox.select()
-            else:
-                checkbox.deselect()
-            self._entries[key] = checkbox
-        else:
-            entry = ctk.CTkEntry(
-                input_container,
-                placeholder_text=label_text,
-                show="*" if is_secret else "",
-                height=38,
-                font=ctk.CTkFont(size=13),
-                corner_radius=8,
-                fg_color="#13141C",
-                border_color="#2A2D3D",
-                text_color="#FFFFFF",
-                placeholder_text_color="#55596B",
-            )
-            entry.pack(side="left", fill="x", expand=True)
-            entry.insert(0, str(current_value))
-            self._entries[key] = entry
-
-            if is_secret:
-                toggle_btn = ctk.CTkButton(
-                    input_container,
-                    text="👁",
-                    width=38,
-                    height=38,
-                    fg_color="#13141C",
-                    hover_color="#222532",
-                    border_color="#2A2D3D",
-                    border_width=1,
-                    corner_radius=8,
-                    text_color="#8F94A6",
-                    command=lambda k=key: self._toggle_secret_visibility(k),
-                )
-                toggle_btn.pack(side="right", padx=(6, 0))
-                self._toggle_btns[key] = toggle_btn
-
-    def _toggle_secret_visibility(self, key: str) -> None:
-        entry = self._entries.get(key)
-        btn = self._toggle_btns.get(key)
-        if entry and btn:
-            current_show = entry.cget("show")
-            if current_show == "*":
-                entry.configure(show="")
-                btn.configure(text="🙈", text_color="#00F5D4")
-            else:
-                entry.configure(show="*")
-                btn.configure(text="👁", text_color="#8F94A6")
+    def _center_window(self) -> None:
+        if not self._root:
+            return
+        try:
+            self._root.update_idletasks()
+            width, height = 620, 640
+            scale = ctk.ScalingTracker.get_window_scaling(self._root)
+            screen_width = int(self._root.winfo_screenwidth() * scale)
+            screen_height = int(self._root.winfo_screenheight() * scale)
+            physical_width = int(width * scale)
+            physical_height = int(height * scale)
+            x = max(0, (screen_width - physical_width) // 2)
+            y = max(0, (screen_height - physical_height) // 2 - 20)
+            self._root.geometry(f"{width}x{height}+{x}+{y}")
+        except Exception:
+            pass
 
     def _destroy_root(self) -> None:
         if self._root:
@@ -299,97 +119,526 @@ class ConfigWindow:
             finally:
                 self._root = None
 
-    def _on_save(self) -> None:
-        new_config = {}
+    # ----------------------------------------------------------------- UI ----
+    def _build_ui(self) -> None:
+        assert self._root is not None
+        root = self._root
+
+        self._build_header(root)
+
+        footer = ctk.CTkFrame(root, fg_color=theme.INK, corner_radius=0)
+        footer.pack(side="bottom", fill="x", padx=32, pady=(8, 18))
+        self._build_footer(footer)
+
+        ctk.CTkFrame(root, height=1, fg_color=theme.BORDER, corner_radius=0).pack(
+            side="bottom", fill="x"
+        )
+
+        body = ctk.CTkFrame(root, fg_color="transparent")
+        body.pack(fill="both", expand=True, padx=32, pady=(20, 0))
+        self._build_form(body)
+
+    def _build_header(self, parent) -> None:
+        header = ctk.CTkFrame(parent, fg_color=theme.INK, corner_radius=0, height=86)
+        header.pack(fill="x")
+        header.pack_propagate(False)
+
+        inner = ctk.CTkFrame(header, fg_color="transparent")
+        inner.pack(fill="both", expand=True, padx=32)
+
+        logo = theme.app_icon_pil(34)
+        if logo is not None:
+            ctk.CTkLabel(inner, text="", image=theme.pil_to_ctk(logo, (34, 34))).pack(
+                side="left", padx=(0, 14)
+            )
+
+        text = ctk.CTkFrame(inner, fg_color="transparent")
+        text.pack(side="left", fill="x", expand=True)
+
+        ctk.CTkLabel(
+            text,
+            text="Ajustes",
+            font=theme.font(21, "bold", display=True),
+            text_color=theme.PAPER,
+            anchor="w",
+        ).pack(fill="x")
+
+        configured = bool(
+            self._config.get("lastfm_username")
+            and self._config.get("lastfm_api_key")
+            and self._config.get("discord_client_id")
+        )
+        subtitle = (
+            "Conexión con Last.fm y Discord"
+            if configured
+            else "Configura tu cuenta para empezar"
+        )
+        ctk.CTkLabel(
+            text,
+            text=subtitle,
+            font=theme.font(10),
+            text_color=theme.MUTED,
+            anchor="w",
+        ).pack(fill="x", pady=(2, 0))
+
+        ctk.CTkFrame(parent, height=1, fg_color=theme.BORDER, corner_radius=0).pack(fill="x")
+
+    def _build_form(self, parent) -> None:
+        ctk.CTkLabel(
+            parent,
+            text="Conexión",
+            font=theme.font(12, "bold", display=True),
+            text_color=theme.PAPER,
+            anchor="w",
+        ).pack(fill="x")
+
+        ctk.CTkLabel(
+            parent,
+            text="Last.fm alimenta tu estado; Discord lo muestra.",
+            font=theme.font(9),
+            text_color=theme.MUTED,
+            anchor="w",
+            height=14,
+        ).pack(fill="x", pady=(1, 12))
+
+        self._add_text_field(
+            parent,
+            "lastfm_username",
+            "Usuario de Last.fm",
+        )
+        self._add_text_field(
+            parent,
+            "lastfm_api_key",
+            "API Key de Last.fm",
+            secret=True,
+            link=("Obtener API Key", LASTFM_API_KEY_URL),
+        )
+        self._add_text_field(
+            parent,
+            "discord_client_id",
+            "Discord Client ID",
+            secret=True,
+            link=("Crear aplicación", DISCORD_APPS_URL),
+        )
+
+        ctk.CTkFrame(parent, height=1, fg_color=theme.BORDER, corner_radius=0).pack(
+            fill="x", pady=(4, 18)
+        )
+
+        ctk.CTkLabel(
+            parent,
+            text="Comportamiento",
+            font=theme.font(12, "bold", display=True),
+            text_color=theme.PAPER,
+            anchor="w",
+        ).pack(fill="x")
+
+        ctk.CTkLabel(
+            parent,
+            text="Cómo se actualiza el estado en Discord.",
+            font=theme.font(9),
+            text_color=theme.MUTED,
+            anchor="w",
+            height=14,
+        ).pack(fill="x", pady=(1, 12))
+
+        self._add_poll_row(parent)
+        self._add_fallback_row(parent)
+
+    def _add_text_field(
+        self,
+        parent,
+        key: str,
+        label: str,
+        secret: bool = False,
+        link: Optional[tuple[str, str]] = None,
+    ) -> None:
+        current_value = str(self._config.get(key, "") or "")
+        field = ctk.CTkFrame(parent, fg_color="transparent")
+        field.pack(fill="x", pady=(0, 12))
+
+        label_row = ctk.CTkFrame(field, fg_color="transparent")
+        label_row.pack(fill="x", pady=(0, 5))
+
+        ctk.CTkLabel(
+            label_row,
+            text=label,
+            font=theme.font(10, "bold"),
+            text_color=theme.LABEL,
+            anchor="w",
+            height=14,
+        ).pack(side="left")
+
+        if link is not None:
+            link_text, url = link
+            ctk.CTkButton(
+                label_row,
+                text=link_text,
+                image=theme.icon("external", 10, theme.ACCENT),
+                compound="right",
+                command=lambda target=url: webbrowser.open(target),
+                height=18,
+                width=132,
+                font=theme.font(9),
+                fg_color="transparent",
+                hover_color=theme.HOVER,
+                text_color=theme.ACCENT,
+                corner_radius=6,
+                border_width=0,
+            ).pack(side="right")
+
+        input_container = ctk.CTkFrame(field, fg_color="transparent")
+        input_container.pack(fill="x")
+
+        entry = ctk.CTkEntry(
+            input_container,
+            placeholder_text=label,
+            show="*" if secret else "",
+            height=38,
+            font=theme.font(12),
+            corner_radius=8,
+            fg_color=theme.PANEL,
+            border_color=theme.BORDER,
+            border_width=1,
+            text_color=theme.PAPER,
+            placeholder_text_color=theme.MUTED,
+        )
+        entry.pack(side="left", fill="x", expand=True)
+        entry.insert(0, current_value)
+        self._entries[key] = entry
+
+        entry.bind("<FocusIn>", lambda _event, w=entry: w.configure(border_color=theme.ACCENT))
+        entry.bind("<FocusOut>", lambda _event, w=entry: w.configure(border_color=theme.BORDER))
+
+        if secret:
+            toggle = ctk.CTkButton(
+                input_container,
+                text="Mostrar",
+                width=68,
+                height=38,
+                fg_color="transparent",
+                hover_color=theme.HOVER,
+                corner_radius=8,
+                font=theme.font(10),
+                text_color=theme.LABEL,
+                command=lambda k=key: self._toggle_secret_visibility(k),
+            )
+            toggle.pack(side="right", padx=(8, 0))
+            self._toggle_btns[key] = toggle
+
+    def _add_poll_row(self, parent) -> None:
+        row = ctk.CTkFrame(parent, fg_color="transparent")
+        row.pack(fill="x", pady=(0, 12))
+
+        text = ctk.CTkFrame(row, fg_color="transparent")
+        text.pack(side="left", fill="x", expand=True)
+
+        ctk.CTkLabel(
+            text,
+            text="Intervalo de consulta",
+            font=theme.font(10, "bold"),
+            text_color=theme.PAPER,
+            anchor="w",
+            height=14,
+        ).pack(fill="x")
+
+        ctk.CTkLabel(
+            text,
+            text="Cada cuántos segundos se consulta Last.fm.",
+            font=theme.font(9),
+            text_color=theme.MUTED,
+            anchor="w",
+            height=14,
+        ).pack(fill="x", pady=(1, 0))
+
+        entry = ctk.CTkEntry(
+            row,
+            height=36,
+            width=64,
+            justify="center",
+            font=theme.font(11),
+            corner_radius=8,
+            fg_color=theme.PANEL,
+            border_color=theme.BORDER,
+            border_width=1,
+            text_color=theme.PAPER,
+        )
+        entry.pack(side="right", padx=(8, 0))
+        entry.insert(0, str(self._config.get("poll_interval", 30)))
+        self._entries["poll_interval"] = entry
+        entry.bind("<FocusIn>", lambda _event, w=entry: w.configure(border_color=theme.ACCENT))
+        entry.bind("<FocusOut>", lambda _event, w=entry: w.configure(border_color=theme.BORDER))
+
+        ctk.CTkLabel(
+            row,
+            text="s",
+            font=theme.font(9),
+            text_color=theme.MUTED,
+            width=12,
+            height=14,
+        ).pack(side="right")
+
+    def _add_fallback_row(self, parent) -> None:
+        row = ctk.CTkFrame(parent, fg_color="transparent")
+        row.pack(fill="x")
+
+        text = ctk.CTkFrame(row, fg_color="transparent")
+        text.pack(side="left", fill="x", expand=True)
+
+        ctk.CTkLabel(
+            text,
+            text="Carátulas alternativas",
+            font=theme.font(10, "bold"),
+            text_color=theme.PAPER,
+            anchor="w",
+            height=14,
+        ).pack(fill="x")
+
+        ctk.CTkLabel(
+            text,
+            text="Deezer y MusicBrainz cuando Last.fm no trae portada.",
+            font=theme.font(9),
+            text_color=theme.MUTED,
+            anchor="w",
+            height=14,
+        ).pack(fill="x", pady=(1, 0))
+
+        switch = ctk.CTkSwitch(
+            row,
+            text="",
+            width=44,
+            progress_color=theme.ACCENT,
+            button_color=theme.PAPER,
+            button_hover_color="#FFFFFF",
+            fg_color=theme.BORDER,
+        )
+        switch.pack(side="right", padx=(12, 0))
+        current_value = self._config.get("enable_fallback_artwork", True)
+        if current_value in (True, "true", "True", "1", 1):
+            switch.select()
+        else:
+            switch.deselect()
+        self._entries["enable_fallback_artwork"] = switch
+
+    def _build_footer(self, parent) -> None:
+        self._status_label = ctk.CTkLabel(
+            parent,
+            text="",
+            font=theme.font(9),
+            text_color=theme.MUTED,
+            wraplength=540,
+            anchor="w",
+            justify="left",
+            height=16,
+        )
+        self._status_label.pack(fill="x", pady=(0, 8))
+
+        buttons = ctk.CTkFrame(parent, fg_color="transparent")
+        buttons.pack(fill="x")
+
+        self._test_btn = ctk.CTkButton(
+            buttons,
+            text="Probar conexión",
+            image=theme.icon("refresh", 12, theme.LABEL),
+            compound="left",
+            command=self._on_test_connection,
+            width=160,
+            height=40,
+            font=theme.font(10),
+            fg_color="transparent",
+            hover_color=theme.HOVER,
+            text_color=theme.LABEL,
+            corner_radius=9,
+            border_width=1,
+            border_color=theme.BORDER,
+        )
+        self._test_btn.pack(side="left")
+
+        self._save_btn = ctk.CTkButton(
+            buttons,
+            text="Guardar cambios",
+            command=self._on_save,
+            height=40,
+            font=theme.font(11, "bold"),
+            fg_color=theme.ACCENT,
+            hover_color=theme.ACCENT_DEEP,
+            text_color=theme.ACCENT_INK,
+            corner_radius=9,
+            border_width=0,
+        )
+        self._save_btn.pack(side="right", fill="x", expand=True, padx=(12, 0))
+
+    # ------------------------------------------------------------- behaviour --
+    def _toggle_secret_visibility(self, key: str) -> None:
+        entry = self._entries.get(key)
+        button = self._toggle_btns.get(key)
+        if not isinstance(entry, ctk.CTkEntry) or button is None:
+            return
+        if entry.cget("show") == "*":
+            entry.configure(show="")
+            button.configure(text="Ocultar", text_color=theme.ACCENT)
+        else:
+            entry.configure(show="*")
+            button.configure(text="Mostrar", text_color=theme.LABEL)
+
+    def _collect_config(self) -> tuple[dict, Optional[str]]:
+        config = self._repo.load()
         for key, widget in self._entries.items():
             if key == "enable_fallback_artwork":
-                new_config[key] = widget.get() == 1
+                config[key] = bool(widget.get() == 1)
+                continue
+            value = widget.get().strip()
+            if key == "poll_interval":
+                try:
+                    interval = int(value)
+                except ValueError:
+                    return {}, "El intervalo debe ser un número entero."
+                if interval < 5:
+                    return {}, "El intervalo mínimo es de 5 segundos."
+                config[key] = interval
             else:
-                value = widget.get().strip()
-                if key == "poll_interval":
-                    try:
-                        new_config[key] = int(value) if value else 30
-                    except ValueError:
-                        self._set_status("Intervalo debe ser un número entero", error=True)
-                        return
-                else:
-                    new_config[key] = value
+                config[key] = value
 
-        required = ["lastfm_username", "lastfm_api_key", "discord_client_id"]
-        missing = [k for k in required if not new_config.get(k)]
+        missing = [
+            label
+            for key, label in (
+                ("lastfm_username", "usuario de Last.fm"),
+                ("lastfm_api_key", "API Key"),
+                ("discord_client_id", "Discord Client ID"),
+            )
+            if not config.get(key)
+        ]
         if missing:
-            self._set_status(f"Campos obligatorios vacíos: {', '.join(missing)}", error=True)
+            return {}, "Faltan datos: " + ", ".join(missing) + "."
+        return config, None
+
+    def _on_save(self) -> None:
+        config, error = self._collect_config()
+        if error:
+            self._set_status(error, error=True)
             return
 
-        self._repo.save(new_config)
-        self._set_status("Configuración guardada correctamente", error=False)
+        try:
+            self._repo.save(config)
+        except OSError:
+            logger.exception("Could not save configuration")
+            self._set_status("No se pudo guardar la configuración.", error=True)
+            return
+
+        self._config = config
         self._saved = True
+        self._set_status("Guardado. Aplicando cambios…", error=False)
 
         if self._on_save_callback:
-            self._root.after(300, lambda: (self._destroy_root(), self._on_save_callback()))
+            try:
+                self._on_save_callback()
+            except Exception:
+                logger.exception("The settings-saved callback failed")
+                self._set_status(
+                    "Guardado, pero no se pudo reiniciar Discord.", error=True
+                )
+                return
+            if self._root:
+                self._root.after(
+                    1600,
+                    lambda: self._set_status(
+                        "Listo. Discord usará estos ajustes.", error=False
+                    ),
+                )
         else:
-            self._root.after(300, self._destroy_root)
+            if self._root:
+                self._root.after(700, self._destroy_root)
 
     def _on_test_connection(self) -> None:
-        self._test_btn.configure(state="disabled", text="Probando...")
-        self._set_status("Probando credenciales...", error=False)
+        if not self._test_btn:
+            return
+        self._test_btn.configure(state="disabled", text="Probando…")
+        self._set_status("Probando credenciales de Last.fm…", error=False)
 
-        def test_thread():
+        def worker() -> None:
+            username_widget = self._entries.get("lastfm_username")
+            api_key_widget = self._entries.get("lastfm_api_key")
+            username = (
+                username_widget.get().strip()
+                if isinstance(username_widget, ctk.CTkEntry)
+                else ""
+            )
+            api_key = (
+                api_key_widget.get().strip()
+                if isinstance(api_key_widget, ctk.CTkEntry)
+                else ""
+            )
+
+            if not username or not api_key:
+                self._post(lambda: self._finish_test("Usuario y API Key son obligatorios.", True))
+                return
+
             try:
-                username_widget = self._entries.get("lastfm_username")
-                api_key_widget = self._entries.get("lastfm_api_key")
-
-                username = username_widget.get().strip() if username_widget and hasattr(username_widget, "get") else ""
-                api_key = api_key_widget.get().strip() if api_key_widget and hasattr(api_key_widget, "get") else ""
-
-                if not username or not api_key:
-                    self._root.after(0, lambda: self._set_status("Usuario y API Key son requeridos", error=True))
-                    self._root.after(0, lambda: self._test_btn.configure(state="normal", text="Probar Conexión"))
-                    return
-
-                url = "https://ws.audioscrobbler.com/2.0/"
-                params = {
-                    "method": "user.getRecentTracks",
-                    "user": username,
-                    "api_key": api_key,
-                    "format": "json",
-                    "limit": 1,
-                }
-
                 with httpx.Client(timeout=10.0) as client:
-                    response = client.get(url, params=params)
-
-                if response.status_code == 200:
-                    data = response.json()
-                    if "error" in data:
-                        self._root.after(0, lambda: self._set_status(f"Error Last.fm: {data.get('message', 'Desconocido')}", error=True))
-                    else:
-                        self._root.after(0, lambda: self._set_status("Conexión exitosa con Last.fm", error=False))
+                    response = client.get(
+                        "https://ws.audioscrobbler.com/2.0/",
+                        params={
+                            "method": "user.getRecentTracks",
+                            "user": username,
+                            "api_key": api_key,
+                            "format": "json",
+                            "limit": 1,
+                        },
+                    )
+                if response.status_code != 200:
+                    self._post(
+                        lambda: self._finish_test(
+                            f"Last.fm respondió HTTP {response.status_code}.", True
+                        )
+                    )
+                    return
+                payload = response.json()
+                if "error" in payload:
+                    message = str(payload.get("message") or "Credenciales rechazadas.")
+                    self._post(lambda: self._finish_test(f"Last.fm: {message}", True))
                 else:
-                    self._root.after(0, lambda: self._set_status(f"HTTP {response.status_code}: Credenciales inválidas", error=True))
-
+                    self._post(
+                        lambda: self._finish_test("Conexión correcta con Last.fm.", False)
+                    )
             except httpx.TimeoutException:
-                self._root.after(0, lambda: self._set_status("Timeout: Verifica tu conexión a internet", error=True))
-            except Exception as e:
-                self._root.after(0, lambda: self._set_status(f"Error: {str(e)}", error=True))
-            finally:
-                self._root.after(0, lambda: self._test_btn.configure(state="normal", text="Probar Conexión"))
+                self._post(lambda: self._finish_test("Last.fm tardó demasiado en responder.", True))
+            except Exception:
+                logger.exception("Connection test failed")
+                self._post(lambda: self._finish_test("No se pudo conectar con Last.fm.", True))
 
-        threading.Thread(target=test_thread, daemon=True).start()
+        threading.Thread(target=worker, daemon=True, name="ConfigTest").start()
+
+    def _finish_test(self, message: str, error: bool) -> None:
+        self._set_status(message, error=error)
+        if self._test_btn:
+            self._test_btn.configure(
+                state="normal",
+                text="Probar conexión",
+            )
+
+    def _post(self, callback) -> None:
+        if not self._root:
+            return
+        try:
+            self._root.after(0, callback)
+        except Exception:
+            pass
 
     def _set_status(self, message: str, error: bool) -> None:
-        if self._status_label:
-            color = "#FF5566" if error else "#00F5D4"
-            self._status_label.configure(text=message, text_color=color)
+        if not self._status_label:
+            return
+        try:
+            if not self._status_label.winfo_exists():
+                return
+            self._status_label.configure(
+                text=message,
+                text_color=theme.ERROR if error else theme.ACCENT,
+            )
+        except Exception:
+            pass
 
     def _on_close(self) -> None:
-        self._saved = False
         self._destroy_root()
-
-    @staticmethod
-    def _open_url(url: str) -> None:
-        import webbrowser
-        webbrowser.open(url)
 
 
 def run_config_window(on_save_callback=None) -> bool:

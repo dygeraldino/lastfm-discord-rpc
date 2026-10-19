@@ -218,3 +218,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Agent skills tooling
+.agents/
+.claude/
+skills-lock.json
