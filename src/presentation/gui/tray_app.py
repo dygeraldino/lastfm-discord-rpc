@@ -181,14 +181,6 @@ class TrayApp:
         self._restart_daemon_thread()
         PlayerWindow.request_refresh()
 
-        # Reopen the player with the new language if it is currently open
-        if PlayerWindow._instance is not None:
-            try:
-                PlayerWindow._instance._root.destroy()
-            except Exception:
-                pass
-            PlayerWindow._instance = None
-
     def _on_open_logs(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         logs_dir = get_logs_dir()
         if logs_dir.exists():
