@@ -150,29 +150,34 @@ class TrayApp:
         self._player_thread.start()
 
     def _run_player_window(self) -> None:
-        run_player_window(on_open_config=self._open_config)
+        run_player_window(
+            on_open_config=self._open_config,
+            on_config_saved=self._on_config_saved,
+        )
 
     def _on_config_click(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         self._open_config()
 
     def _open_config(self) -> None:
+        """Route Ajustes through the player's Tk loop; thread only when it is closed."""
         logger.info("Opening settings window")
+        if PlayerWindow._instance is not None:
+            PlayerWindow.request_open_config(self._on_config_saved)
+            return
+
         threading.Thread(
-            target=self._run_config_window,
+            target=lambda: run_config_window(on_save_callback=self._on_config_saved),
             daemon=True,
             name="ConfigWindow",
         ).start()
 
-    def _run_config_window(self) -> None:
-        def on_config_saved() -> None:
-            logger.info("Config saved, restarting daemon...")
-            from config.settings import reload_settings
+    def _on_config_saved(self) -> None:
+        logger.info("Config saved, restarting daemon...")
+        from config.settings import reload_settings
 
-            reload_settings()
-            self._restart_daemon_thread()
-            PlayerWindow.request_refresh()
-
-        run_config_window(on_save_callback=on_config_saved)
+        reload_settings()
+        self._restart_daemon_thread()
+        PlayerWindow.request_refresh()
 
     def _on_open_logs(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         logs_dir = get_logs_dir()

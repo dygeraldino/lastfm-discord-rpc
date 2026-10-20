@@ -9,7 +9,6 @@ from __future__ import annotations
 import threading
 import webbrowser
 from typing import Optional
-
 import customtkinter as ctk
 import httpx
 
@@ -27,8 +26,9 @@ class ConfigWindow:
     _active_instance: "Optional[ConfigWindow]" = None
     _lock = threading.Lock()
 
-    def __init__(self, on_save_callback=None) -> None:
+    def __init__(self, on_save_callback=None, master=None) -> None:
         self._on_save_callback = on_save_callback
+        self._master = master
         self._saved = False
         self._repo = JsonConfigRepository()
         self._config = self._repo.load()
@@ -63,6 +63,7 @@ class ConfigWindow:
             logger.warning(f"Error bringing window to front: {e}")
 
     def show(self) -> bool:
+        embedded = self._master is not None
         with ConfigWindow._lock:
             if ConfigWindow._active_instance is not None:
                 logger.info("Config window is already open. Bringing existing instance to front.")
@@ -72,52 +73,93 @@ class ConfigWindow:
 
         try:
             self._saved = False
-            self._root = ctk.CTk()
-            self._root.title("LastfmPresence - Ajustes")
-            self._root.geometry("620x640")
-            self._root.minsize(620, 620)
-            self._root.resizable(False, False)
-            self._root.configure(fg_color=theme.INK)
-            self._root.protocol("WM_DELETE_WINDOW", self._on_close)
-            self._root.bind("<<FocusWindow>>", self._bring_to_front)
-            self._root.bind("<Escape>", lambda _event: self._on_close())
-            theme.set_window_icon(self._root)
-
-            self._build_ui()
-            self._center_window()
-            self._root.mainloop()
-            return self._saved
+            if embedded:
+                self._open_in_master()
+                return True
+            return self._open_standalone()
         finally:
-            with ConfigWindow._lock:
-                if ConfigWindow._active_instance is self:
-                    ConfigWindow._active_instance = None
+            if not embedded:
+                with ConfigWindow._lock:
+                    if ConfigWindow._active_instance is self:
+                        ConfigWindow._active_instance = None
 
-    def _center_window(self) -> None:
+    def _open_standalone(self) -> bool:
+        window = ctk.CTk()
+        self._root = window
+        window.title("LastfmPresence - Ajustes")
+        window.geometry("620x640")
+        window.resizable(False, False)
+        window.configure(fg_color=theme.INK)
+        window.protocol("WM_DELETE_WINDOW", self._on_close)
+        window.bind("<<FocusWindow>>", self._bring_to_front)
+        window.bind("<Escape>", lambda _event: self._on_close())
+        theme.set_window_icon(window)
+
+        self._build_ui()
+        self._center_window()
+        window.mainloop()
+        return self._saved
+
+    def _open_in_master(self) -> None:
+        """Host the window inside the player's Tk loop: one thread, no second mainloop."""
+        master = self._master
+        if master is None:
+            return
+        window = ctk.CTkToplevel(master)
+        self._root = window
+        window.title("LastfmPresence - Ajustes")
+        window.geometry("620x640")
+        window.resizable(False, False)
+        window.configure(fg_color=theme.INK)
+        window.transient(master)
+        window.protocol("WM_DELETE_WINDOW", self._on_close)
+        window.bind("<<FocusWindow>>", self._bring_to_front)
+        window.bind("<Escape>", lambda _event: self._on_close())
+        theme.set_window_icon(window)
+
+        self._build_ui()
+        self._center_window(over=master)
+        window.lift()
+        window.focus_force()
+
+    def _center_window(self, over=None) -> None:
         if not self._root:
             return
         try:
             self._root.update_idletasks()
             width, height = 620, 640
             scale = ctk.ScalingTracker.get_window_scaling(self._root)
-            screen_width = int(self._root.winfo_screenwidth() * scale)
-            screen_height = int(self._root.winfo_screenheight() * scale)
             physical_width = int(width * scale)
             physical_height = int(height * scale)
-            x = max(0, (screen_width - physical_width) // 2)
-            y = max(0, (screen_height - physical_height) // 2 - 20)
-            self._root.geometry(f"{width}x{height}+{x}+{y}")
+            if over is not None:
+                x = over.winfo_rootx() + (over.winfo_width() - physical_width) // 2
+                y = over.winfo_rooty() + (over.winfo_height() - physical_height) // 2
+            else:
+                screen_width = int(self._root.winfo_screenwidth() * scale)
+                screen_height = int(self._root.winfo_screenheight() * scale)
+                x = max(0, (screen_width - physical_width) // 2)
+                y = max(0, (screen_height - physical_height) // 2 - 20)
+            self._root.geometry(f"{width}x{height}+{max(0, x)}+{max(0, y)}")
         except Exception:
             pass
 
     def _destroy_root(self) -> None:
-        if self._root:
-            try:
-                self._root.quit()
-                self._root.destroy()
-            except Exception as e:
-                logger.warning(f"Error destroying window: {e}")
-            finally:
-                self._root = None
+        window = self._root
+        self._root = None
+        if not window:
+            return
+        try:
+            if self._master is not None:
+                window.destroy()
+            else:
+                window.quit()
+                window.destroy()
+        except Exception as e:
+            logger.warning(f"Error destroying window: {e}")
+        finally:
+            with ConfigWindow._lock:
+                if ConfigWindow._active_instance is self:
+                    ConfigWindow._active_instance = None
 
     # ----------------------------------------------------------------- UI ----
     def _build_ui(self) -> None:
@@ -639,6 +681,6 @@ class ConfigWindow:
         self._destroy_root()
 
 
-def run_config_window(on_save_callback=None) -> bool:
-    window = ConfigWindow(on_save_callback)
+def run_config_window(on_save_callback=None, master=None) -> bool:
+    window = ConfigWindow(on_save_callback, master=master)
     return window.show()

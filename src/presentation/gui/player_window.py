@@ -40,9 +40,20 @@ SOURCE_ORDER = ("base", "deezer", "musicbrainz")
 COVER_SIZE = 300
 RECENT_COVER = 72
 TILE_COVER = 64
-POLL_SECONDS = 15
+DEFAULT_POLL_SECONDS = 30
+MIN_POLL_SECONDS = 5
+MAX_POLL_SECONDS = 300
 RECENT_LIMIT = 10
 SHELF_LIMIT = 6
+
+
+def _poll_interval_from_config(config: dict) -> int:
+    """Clamp the configured poll interval so the player can never spin free."""
+    try:
+        value = int(str(config.get("poll_interval") or "").strip())
+    except (TypeError, ValueError):
+        return DEFAULT_POLL_SECONDS
+    return max(MIN_POLL_SECONDS, min(MAX_POLL_SECONDS, value))
 
 
 class PlayerWindow:
@@ -52,14 +63,17 @@ class PlayerWindow:
     _instance_lock = threading.Lock()
     _show_requests: "queue.Queue[bool]" = queue.Queue()
     _refresh_requests: "queue.Queue[bool]" = queue.Queue()
+    _config_requests: "queue.Queue[Optional[Callable[[], None]]]" = queue.Queue()
 
     def __init__(
         self,
         on_open_config: Optional[Callable[[], None]] = None,
         fetcher: Optional[Callable[[str, str, int], list[RecentTrack]]] = None,
         overrides: Optional[SongOverrideRepository] = None,
+        on_config_saved: Optional[Callable[[], None]] = None,
     ) -> None:
         self._on_open_config = on_open_config
+        self._on_config_saved = on_config_saved
         self._fetcher = fetcher or LastFmRecentTracksClient().fetch
         self._config_repo = JsonConfigRepository()
         self._overrides = overrides or JsonSongOverrideRepository()
@@ -81,6 +95,7 @@ class PlayerWindow:
         self._loading = False
         self._visible = False
         self._last_updated: Optional[datetime] = None
+        self._poll_seconds = DEFAULT_POLL_SECONDS
         self._poll_job: Optional[str] = None
         self._eq_job: Optional[str] = None
         self._eq_phase = 0.0
@@ -100,6 +115,12 @@ class PlayerWindow:
     def request_refresh(cls) -> None:
         cls._refresh_requests.put(True)
 
+    @classmethod
+    def request_open_config(cls, on_config_saved: Optional[Callable[[], None]] = None) -> bool:
+        """Ask an existing player window to open Ajustes in its own Tk loop."""
+        cls._config_requests.put(on_config_saved)
+        return cls._instance is not None
+
     def show(self) -> None:
         with PlayerWindow._instance_lock:
             if PlayerWindow._instance is not None:
@@ -111,9 +132,8 @@ class PlayerWindow:
             self._root = ctk.CTk()
             self._root.title("LastfmPresence")
             self._root.configure(fg_color=theme.INK)
-            self._root.minsize(860, 680)
             self._root.geometry("920x700")
-            self._root.resizable(True, True)
+            self._root.resizable(False, False)
             theme.set_window_icon(self._root)
 
             self._build_ui()
@@ -204,6 +224,13 @@ class PlayerWindow:
         if refresh:
             self._refresh()
 
+        while True:
+            try:
+                callback = PlayerWindow._config_requests.get_nowait()
+            except queue.Empty:
+                break
+            self._open_config(callback)
+
         try:
             self._root.after(120, self._drain_queues)
         except Exception:
@@ -217,7 +244,7 @@ class PlayerWindow:
                 self._root.after_cancel(self._poll_job)
             except Exception:
                 pass
-        self._poll_job = self._root.after(POLL_SECONDS * 1000, self._auto_refresh)
+        self._poll_job = self._root.after(self._poll_seconds * 1000, self._auto_refresh)
 
     def _auto_refresh(self) -> None:
         self._poll_job = None
@@ -578,6 +605,7 @@ class PlayerWindow:
             return
 
         config = self._config_repo.load()
+        self._poll_seconds = _poll_interval_from_config(config)
         username = str(config.get("lastfm_username") or "").strip()
         api_key = str(config.get("lastfm_api_key") or "").strip()
 
@@ -1295,7 +1323,17 @@ class PlayerWindow:
         self._update_footer()
 
     # -------------------------------------------------------------- actions --
-    def _open_config(self) -> None:
+    def _open_config(self, on_config_saved: Optional[Callable[[], None]] = None) -> None:
+        """Open Ajustes inside this window's Tk loop when a save callback exists."""
+        callback = on_config_saved or self._on_config_saved
+        if callback is not None:
+            from src.presentation.gui.main_window import run_config_window
+
+            try:
+                run_config_window(on_save_callback=callback, master=self._root)
+            except Exception:
+                logger.exception("Could not open the settings window from the player")
+            return
         if self._on_open_config is None:
             logger.info("No settings opener is wired to the player")
             return
@@ -1581,8 +1619,11 @@ class OverrideManager(ctk.CTkToplevel):
             pass
 
 
-def run_player_window(on_open_config: Optional[Callable[[], None]] = None) -> None:
-    PlayerWindow(on_open_config=on_open_config).show()
+def run_player_window(
+    on_open_config: Optional[Callable[[], None]] = None,
+    on_config_saved: Optional[Callable[[], None]] = None,
+) -> None:
+    PlayerWindow(on_open_config=on_open_config, on_config_saved=on_config_saved).show()
 
 
 
