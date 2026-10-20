@@ -122,6 +122,12 @@ class PlayerWindow:
         cls._config_requests.put(on_config_saved)
         return cls._instance is not None
 
+    @classmethod
+    def request_close(cls) -> None:
+        """Ask an existing player window to close safely from any thread."""
+        if cls._instance is not None and cls._instance._root is not None:
+            cls._instance._root.after(0, cls._instance._root.destroy)
+
     def show(self) -> None:
         with PlayerWindow._instance_lock:
             if PlayerWindow._instance is not None:

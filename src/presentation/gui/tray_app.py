@@ -176,10 +176,17 @@ class TrayApp:
         logger.info("Config saved, restarting daemon...")
         from config.settings import reload_settings
 
+        old_lang = get_language()
         reload_settings()
-        load_language()  # Update active language immediately
+        new_lang = load_language()
         self._restart_daemon_thread()
         PlayerWindow.request_refresh()
+
+        if old_lang != new_lang and PlayerWindow._instance is not None:
+            # Language changed: close the player safely and reopen it so the UI
+            # strings are redrawn in the new language.
+            PlayerWindow.request_close()
+            threading.Timer(1.0, self._show_player).start()
 
     def _on_open_logs(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         logs_dir = get_logs_dir()
