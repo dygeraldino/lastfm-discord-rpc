@@ -20,6 +20,8 @@ import customtkinter as ctk
 import httpx
 from PIL import Image, ImageDraw, ImageOps
 
+from src.presentation.gui.locale import t
+
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
@@ -321,12 +323,12 @@ def format_relative_time(timestamp: Optional[int]) -> str:
         return ""
     seconds = max(0, int((datetime.now(timezone.utc) - then).total_seconds()))
     if seconds < 60:
-        return "hace un momento"
+        return t("hace un momento")
     minutes = seconds // 60
     if minutes < 60:
-        return f"hace {minutes} min"
+        return t("hace {minutes} min", minutes=minutes)
     hours = minutes // 60
     if hours < 24:
-        return f"hace {hours} h"
+        return t("hace {hours} h", hours=hours)
     days = hours // 24
-    return f"hace {days} d"
+    return t("hace {days} d", days=days)

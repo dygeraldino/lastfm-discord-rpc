@@ -32,6 +32,7 @@ from src.infrastructure.providers.lastfm_recent_tracks import (
     RecentTrack,
 )
 from src.presentation.gui import theme
+from src.presentation.gui.locale import t, load_language
 
 logger = get_logger(__name__)
 
@@ -360,7 +361,7 @@ class PlayerWindow:
 
         self._status_label = ctk.CTkLabel(
             status_row,
-            text="CONECTANDO",
+            text=t("CONECTANDO"),
             font=theme.font("tiny", "bold"),
             text_color=theme.MUTED,
             anchor="w",
@@ -370,7 +371,7 @@ class PlayerWindow:
 
         self._title_label = ctk.CTkLabel(
             parent,
-            text="Buscando tu última reproducción…",
+            text=t("Buscando tu última reproducción…"),
             font=theme.font(30, "bold", display=True),
             text_color=theme.PAPER,
             anchor="w",
@@ -418,7 +419,7 @@ class PlayerWindow:
 
         self._open_btn = ctk.CTkButton(
             eq_row,
-            text="Abrir en Last.fm",
+            text=t("Abrir en Last.fm"),
             image=theme.icon("external", 13, theme.MUTED),
             compound="left",
             command=self._open_lastfm,
@@ -446,7 +447,7 @@ class PlayerWindow:
 
         ctk.CTkLabel(
             heading,
-            text="Carátula",
+            text=t("Carátula"),
             font=theme.font("small", "bold"),
             text_color=theme.LABEL,
             anchor="w",
@@ -455,7 +456,7 @@ class PlayerWindow:
 
         self._cover_state = ctk.CTkLabel(
             heading,
-            text="Automática",
+            text=t("Automática"),
             font=theme.font("tiny"),
             text_color=theme.MUTED,
             anchor="e",
@@ -471,7 +472,7 @@ class PlayerWindow:
 
         self._save_btn = ctk.CTkButton(
             actions,
-            text="Guardar carátula",
+            text=t("Guardar carátula"),
             command=self._save_override,
             width=148,
             height=34,
@@ -486,7 +487,7 @@ class PlayerWindow:
 
         self._remove_btn = ctk.CTkButton(
             actions,
-            text="Quitar",
+            text=t("Quitar"),
             image=theme.icon("close", 11, theme.LABEL),
             compound="left",
             command=self._remove_override,
@@ -526,7 +527,7 @@ class PlayerWindow:
         header.pack(fill="x")
         ctk.CTkLabel(
             header,
-            text="Recientes",
+            text=t("Recientes"),
             font=theme.font("display", "bold", display=True),
             text_color=theme.LABEL,
             anchor="w",
@@ -535,7 +536,7 @@ class PlayerWindow:
 
         self._follow_btn = ctk.CTkButton(
             header,
-            text="Volver a la actual",
+            text=t("Volver a la actual"),
             command=self._return_to_current,
             height=24,
             width=128,
@@ -568,7 +569,7 @@ class PlayerWindow:
 
         ctk.CTkLabel(
             inner,
-            text="Datos de Last.fm",
+            text=t("Datos de Last.fm"),
             font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
@@ -585,7 +586,7 @@ class PlayerWindow:
 
         self._overrides_btn = ctk.CTkButton(
             inner,
-            text="Sin carátulas personalizadas",
+            text=t("Sin carátulas personalizadas"),
             command=self._open_manager,
             height=24,
             width=200,
@@ -617,7 +618,7 @@ class PlayerWindow:
         if self._selected is None:
             self._render_loading()
         else:
-            self._updated_label.configure(text="Actualizando…")
+            self._updated_label.configure(text=t("Actualizando…"))
 
         threading.Thread(
             target=self._fetch_worker,
@@ -760,20 +761,20 @@ class PlayerWindow:
 
         is_current = track.key == self._current_key
         if track.now_playing and is_current:
-            self._set_status("AHORA SUENA", theme.ACCENT)
+            self._set_status(t("AHORA SUENA"), theme.ACCENT)
         elif is_current:
             relative = theme.format_relative_time(track.played_at)
             suffix = f" · {relative}" if relative else ""
-            self._set_status(f"ÚLTIMA REPRODUCCIÓN{suffix}", theme.MUTED)
+            self._set_status(t("ÚLTIMA REPRODUCCIÓN") + suffix, theme.MUTED)
         else:
             relative = theme.format_relative_time(track.played_at)
             suffix = f" · {relative}" if relative else ""
-            self._set_status(f"VISTA PREVIA{suffix}", theme.MUTED)
+            self._set_status(t("VISTA PREVIA") + suffix, theme.MUTED)
 
         self._title_label.configure(text=track.title)
         self._artist_label.configure(text=track.artist)
         self._album_label.configure(text=track.album or " ")
-        self._set_open_action("Abrir en Last.fm", self._open_lastfm, icon="external")
+        self._set_open_action(t("Abrir en Last.fm"), self._open_lastfm, icon="external")
 
         if track.now_playing and self._follow_current:
             self._start_eq()
@@ -789,7 +790,7 @@ class PlayerWindow:
         if not self._tracks:
             ctk.CTkLabel(
                 self._shelf,
-                text="Aún no hay reproducciones.",
+                text=t("Aún no hay reproducciones."),
                 font=theme.font("small"),
                 text_color=theme.MUTED,
                 anchor="w",
@@ -815,7 +816,7 @@ class PlayerWindow:
             cover_label = ctk.CTkLabel(tile, text="", image=cover)
             cover_label.pack(anchor="w", padx=6, pady=(6, 0))
 
-            moment = "Ahora" if track.now_playing else theme.format_relative_time(track.played_at)
+            moment = t("Ahora") if track.now_playing else theme.format_relative_time(track.played_at)
             time_label = ctk.CTkLabel(
                 tile,
                 text=moment,
@@ -937,7 +938,7 @@ class PlayerWindow:
         if not hasattr(self, "_updated_label"):
             return
         if self._loading:
-            self._updated_label.configure(text="Actualizando…")
+            self._updated_label.configure(text=t("Actualizando…"))
         elif self._last_updated is not None:
             relative = theme.format_relative_time(int(self._last_updated.timestamp()))
             self._updated_label.configure(text=f"Actualizado {relative}")
@@ -958,7 +959,7 @@ class PlayerWindow:
             self._overrides_btn.configure(text=label, state="normal", text_color=theme.ACCENT)
         else:
             self._overrides_btn.configure(
-                text="Sin carátulas personalizadas",
+                text=t("Sin carátulas personalizadas"),
                 state="disabled",
                 text_color=theme.MUTED,
             )
@@ -969,68 +970,68 @@ class PlayerWindow:
         self._selected = None
         self._current_key = None
         self._set_cover(None)
-        self._set_status("CONECTANDO", theme.MUTED)
-        self._title_label.configure(text="Buscando tu última reproducción…")
-        self._artist_label.configure(text="Leyendo tu actividad de Last.fm.")
+        self._set_status(t("CONECTANDO"), theme.MUTED)
+        self._title_label.configure(text=t("Buscando tu última reproducción…"))
+        self._artist_label.configure(text=t("Leyendo tu actividad de Last.fm."))
         self._album_label.configure(text=" ")
         self._hide_cover_section()
         self._set_open_action(None)
         self._stop_eq()
         self._render_recent()
         self._follow_btn.pack_forget()
-        self._updated_label.configure(text="Actualizando…")
+        self._updated_label.configure(text=t("Actualizando…"))
 
     def _render_unconfigured(self) -> None:
         self._tracks = []
         self._selected = None
         self._current_key = None
         self._set_cover(None)
-        self._set_status("SIN CONFIGURAR", theme.MUTED)
-        self._title_label.configure(text="Conecta tu cuenta")
+        self._set_status(t("SIN CONFIGURAR"), theme.MUTED)
+        self._title_label.configure(text=t("Conecta tu cuenta"))
         self._artist_label.configure(
-            text="Añade tus credenciales de Last.fm y Discord para empezar."
+            text=t("Añade tus credenciales de Last.fm y Discord para empezar.")
         )
         self._album_label.configure(text=" ")
         self._hide_cover_section()
-        self._set_open_action("Abrir ajustes", self._open_config, accent=True, icon="gear")
+        self._set_open_action(t("Abrir ajustes"), self._open_config, accent=True, icon="gear")
         self._stop_eq()
         self._render_recent()
         self._follow_btn.pack_forget()
-        self._updated_label.configure(text="Sin datos")
+        self._updated_label.configure(text=t("Sin datos"))
 
     def _render_empty(self) -> None:
         self._set_cover(None)
-        self._set_status("EN ESPERA", theme.MUTED)
-        self._title_label.configure(text="Sin reproducción")
+        self._set_status(t("EN ESPERA"), theme.MUTED)
+        self._title_label.configure(text=t("Sin reproducción"))
         self._artist_label.configure(
-            text="Cuando empieces a escuchar algo, aparecerá aquí."
+            text=t("Cuando empieces a escuchar algo, aparecerá aquí.")
         )
         self._album_label.configure(text=" ")
         self._hide_cover_section()
-        self._set_open_action("Actualizar", self._refresh, icon="refresh")
+        self._set_open_action(t("Actualizar"), self._refresh, icon="refresh")
         self._stop_eq()
         self._follow_btn.pack_forget()
 
     def _render_error(self, message: str) -> None:
         if self._selected is not None:
-            self._note("No se pudo actualizar. Se muestra la última lectura.", error=True)
-            self._updated_label.configure(text="No se pudo actualizar")
+            self._note(t("No se pudo actualizar. Se muestra la última lectura."), error=True)
+            self._updated_label.configure(text=t("No se pudo actualizar"))
             return
 
         self._tracks = []
         self._selected = None
         self._current_key = None
         self._set_cover(None)
-        self._set_status("SIN CONEXIÓN", theme.ERROR)
-        self._title_label.configure(text="No se pudo leer Last.fm")
+        self._set_status(t("SIN CONEXIÓN"), theme.ERROR)
+        self._title_label.configure(text=t("No se pudo leer Last.fm"))
         self._artist_label.configure(text=message)
         self._album_label.configure(text=" ")
         self._hide_cover_section()
-        self._set_open_action("Reintentar", self._refresh, icon="refresh")
+        self._set_open_action(t("Reintentar"), self._refresh, icon="refresh")
         self._stop_eq()
         self._render_recent()
         self._follow_btn.pack_forget()
-        self._updated_label.configure(text="Sin conexión")
+        self._updated_label.configure(text=t("Sin conexión"))
 
     # ------------------------------------------------------------ candidates --
     def _load_candidates(self, track: RecentTrack) -> None:
@@ -1086,12 +1087,12 @@ class PlayerWindow:
             child.destroy()
         ctk.CTkLabel(
             self._tiles_host,
-            text="Buscando carátulas en Deezer y MusicBrainz…",
+            text=t("Buscando carátulas en Deezer y MusicBrainz…"),
             font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
         ).pack(anchor="w", pady=(2, 6))
-        self._note("Consultando fuentes alternativas.")
+        self._note(t("Consultando fuentes alternativas."))
 
     def _finish_candidates(
         self,
@@ -1111,7 +1112,7 @@ class PlayerWindow:
         self._render_recent()
         self._update_save_state()
         if not any(urls.values()):
-            self._note("No se encontraron carátulas alternativas.")
+            self._note(t("No se encontraron carátulas alternativas."))
         else:
             self._clear_note()
 
@@ -1123,7 +1124,7 @@ class PlayerWindow:
         self._choice = None
         self._render_tiles()
         self._update_save_state()
-        self._note("No se pudieron consultar las fuentes alternativas.", error=True)
+        self._note(t("No se pudieron consultar las fuentes alternativas."), error=True)
 
     def _choose_default_source(self) -> None:
         available = [source for source in SOURCE_ORDER if self._candidates.get(source)]
@@ -1186,7 +1187,7 @@ class PlayerWindow:
                     empty.pack_propagate(False)
                     ctk.CTkLabel(
                         empty,
-                        text="Sin\nportada",
+                        text=t("Sin\nportada"),
                         font=theme.font("tiny"),
                         text_color=theme.MUTED,
                         justify="center",
@@ -1210,7 +1211,7 @@ class PlayerWindow:
                 empty.pack_propagate(False)
                 ctk.CTkLabel(
                     empty,
-                    text="Sin\nportada",
+                    text=t("Sin\nportada"),
                     font=theme.font("tiny"),
                     text_color=theme.MUTED,
                     justify="center",
@@ -1226,7 +1227,7 @@ class PlayerWindow:
 
             label = ctk.CTkLabel(
                 label_row,
-                text=SOURCE_LABELS[source],
+                text=t(SOURCE_LABELS[source]),
                 font=self._tile_font,
                 text_color=text_color,
                 anchor="w",
@@ -1278,14 +1279,14 @@ class PlayerWindow:
 
         if saved:
             self._save_btn.configure(
-                text="Guardada",
+                text=t("Guardada"),
                 state="disabled",
                 fg_color=theme.ELEVATED,
                 text_color=theme.ACCENT,
             )
         elif self._choice == "none" or url:
             self._save_btn.configure(
-                text="Guardar carátula",
+                text=t("Guardar carátula"),
                 state="normal",
                 fg_color=theme.ACCENT,
                 hover_color=theme.ACCENT_DEEP,
@@ -1293,7 +1294,7 @@ class PlayerWindow:
             )
         else:
             self._save_btn.configure(
-                text="Guardar carátula",
+                text=t("Guardar carátula"),
                 state="disabled",
                 fg_color=theme.PANEL,
                 text_color=theme.MUTED,
@@ -1302,10 +1303,10 @@ class PlayerWindow:
         if override is not None:
             if not self._remove_btn.winfo_manager():
                 self._remove_btn.pack(side="left", padx=(10, 0))
-            self._cover_state.configure(text="Personalizada", text_color=theme.ACCENT)
+            self._cover_state.configure(text=t("Personalizada"), text_color=theme.ACCENT)
         else:
             self._remove_btn.pack_forget()
-            self._cover_state.configure(text="Automática", text_color=theme.MUTED)
+            self._cover_state.configure(text=t("Automática"), text_color=theme.MUTED)
 
     def _save_override(self) -> None:
         track = self._selected
@@ -1325,7 +1326,7 @@ class PlayerWindow:
             self._overrides.save(override)
         except Exception:
             logger.exception("Could not save artwork override")
-            self._note("No se pudo guardar la carátula.", error=True)
+            self._note(t("No se pudo guardar la carátula."), error=True)
             return
 
         self._override = override
@@ -1334,9 +1335,9 @@ class PlayerWindow:
         self._render_recent()
         self._update_save_state()
         if self._choice == "none":
-            self._note("Sin portada. Se usará el logo de la app.")
+            self._note(t("Sin portada. Se usará el logo de la app."))
         else:
-            self._note("Guardada. Discord la usará cuando cambie la pista.")
+            self._note(t("Guardada. Discord la usará cuando cambie la pista."))
         self._update_footer()
 
     def _remove_override(self) -> None:
@@ -1347,7 +1348,7 @@ class PlayerWindow:
             removed = self._overrides.remove(track.artist, track.title)
         except Exception:
             logger.exception("Could not remove artwork override")
-            self._note("No se pudo quitar la personalización.", error=True)
+            self._note(t("No se pudo quitar la personalización."), error=True)
             return
 
         self._override = None
@@ -1358,9 +1359,9 @@ class PlayerWindow:
         self._render_recent()
         self._update_save_state()
         if removed:
-            self._note("Personalización eliminada. Se usará la carátula automática.")
+            self._note(t("Personalización eliminada. Se usará la carátula automática."))
         else:
-            self._note("Esta canción no tenía una carátula personalizada.")
+            self._note(t("Esta canción no tenía una carátula personalizada."))
         self._update_footer()
 
     # -------------------------------------------------------------- actions --
@@ -1497,7 +1498,7 @@ class OverrideManager(ctk.CTkToplevel):
         self._repo = repo
         self._on_change = on_change
 
-        self.title("LastfmPresence - Carátulas personalizadas")
+        self.title(t("LastfmPresence - Carátulas personalizadas"))
         self.geometry("470x500")
         self.configure(fg_color=theme.INK)
         self.transient(master)
@@ -1513,7 +1514,7 @@ class OverrideManager(ctk.CTkToplevel):
 
         ctk.CTkLabel(
             header,
-            text="Carátulas personalizadas",
+            text=t("Carátulas personalizadas"),
             font=theme.font("display-lg", "bold", display=True),
             text_color=theme.PAPER,
             anchor="w",
@@ -1521,7 +1522,7 @@ class OverrideManager(ctk.CTkToplevel):
 
         ctk.CTkLabel(
             header,
-            text="Se aplican cuando suena cada canción.",
+            text=t("Se aplican cuando suena cada canción."),
             font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
@@ -1554,7 +1555,7 @@ class OverrideManager(ctk.CTkToplevel):
 
         ctk.CTkButton(
             footer,
-            text="Cerrar",
+            text=t("Cerrar"),
             command=self.destroy,
             width=86,
             height=32,
@@ -1580,13 +1581,13 @@ class OverrideManager(ctk.CTkToplevel):
         if not overrides:
             ctk.CTkLabel(
                 self._list,
-                text="Todavía no has personalizado ninguna carátula.",
+                text=t("Todavía no has personalizado ninguna carátula."),
                 font=theme.font("small"),
                 text_color=theme.MUTED,
                 wraplength=320,
                 justify="center",
             ).pack(pady=60)
-            self._count_label.configure(text="0 personalizadas")
+            self._count_label.configure(text=t("0 personalizadas"))
             return
 
         for override in overrides:
@@ -1614,7 +1615,7 @@ class OverrideManager(ctk.CTkToplevel):
 
             ctk.CTkLabel(
                 text,
-                text=f"{override.artist} · {SOURCE_LABELS.get(override.source, override.source)}",
+                text=f"{override.artist} · {t(SOURCE_LABELS.get(override.source, override.source))}",
                 font=theme.font("small"),
                 text_color=theme.MUTED,
                 anchor="w",
@@ -1637,7 +1638,7 @@ class OverrideManager(ctk.CTkToplevel):
 
         count = len(overrides)
         self._count_label.configure(
-            text="1 personalizada" if count == 1 else f"{count} personalizadas"
+            text=t("1 personalizada") if count == 1 else t("{count} personalizadas", count=count)
         )
 
     def _remove(self, override: SongOverride) -> None:

@@ -15,6 +15,7 @@ import httpx
 from config.logging_config import get_logger
 from src.infrastructure.persistence.json_config_repository import JsonConfigRepository
 from src.presentation.gui import theme
+from src.presentation.gui.locale import t, get_language, set_language, save_language
 
 logger = get_logger(__name__)
 
@@ -199,7 +200,7 @@ class ConfigWindow:
 
         ctk.CTkLabel(
             text,
-            text="Ajustes",
+            text=t("Ajustes"),
             font=theme.font("display-lg", "bold", display=True),
             text_color=theme.PAPER,
             anchor="w",
@@ -211,9 +212,9 @@ class ConfigWindow:
             and self._config.get("discord_client_id")
         )
         subtitle = (
-            "Conexión con Last.fm y Discord"
+            t("Conexión con Last.fm y Discord")
             if configured
-            else "Configura tu cuenta para empezar"
+            else t("Configura tu cuenta para empezar")
         )
         ctk.CTkLabel(
             text,
@@ -228,7 +229,7 @@ class ConfigWindow:
     def _build_form(self, parent) -> None:
         ctk.CTkLabel(
             parent,
-            text="Conexión",
+            text=t("Conexión"),
             font=theme.font("body", "bold", display=True),
             text_color=theme.PAPER,
             anchor="w",
@@ -236,7 +237,7 @@ class ConfigWindow:
 
         ctk.CTkLabel(
             parent,
-            text="Last.fm alimenta tu estado; Discord lo muestra.",
+            text=t("Last.fm alimenta tu estado; Discord lo muestra."),
             font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
@@ -246,21 +247,21 @@ class ConfigWindow:
         self._add_text_field(
             parent,
             "lastfm_username",
-            "Usuario de Last.fm",
+            t("Usuario de Last.fm"),
         )
         self._add_text_field(
             parent,
             "lastfm_api_key",
-            "API Key de Last.fm",
+            t("API Key de Last.fm"),
             secret=True,
-            link=("Obtener API Key", LASTFM_API_KEY_URL),
+            link=(t("Obtener API Key"), LASTFM_API_KEY_URL),
         )
         self._add_text_field(
             parent,
             "discord_client_id",
-            "Discord Client ID",
+            t("Discord Client ID"),
             secret=True,
-            link=("Crear aplicación", DISCORD_APPS_URL),
+            link=(t("Crear aplicación"), DISCORD_APPS_URL),
         )
 
         ctk.CTkFrame(parent, height=1, fg_color=theme.BORDER, corner_radius=0).pack(
@@ -269,7 +270,7 @@ class ConfigWindow:
 
         ctk.CTkLabel(
             parent,
-            text="Comportamiento",
+            text=t("Comportamiento"),
             font=theme.font("body", "bold", display=True),
             text_color=theme.PAPER,
             anchor="w",
@@ -277,7 +278,7 @@ class ConfigWindow:
 
         ctk.CTkLabel(
             parent,
-            text="Cómo se actualiza el estado en Discord.",
+            text=t("Cómo se actualiza el estado en Discord."),
             font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
@@ -355,7 +356,7 @@ class ConfigWindow:
         if secret:
             toggle = ctk.CTkButton(
                 input_container,
-                text="Mostrar",
+                text=t("Mostrar"),
                 width=68,
                 height=38,
                 fg_color="transparent",
@@ -377,7 +378,7 @@ class ConfigWindow:
 
         ctk.CTkLabel(
             text,
-            text="Intervalo de consulta",
+            text=t("Intervalo de consulta"),
             font=theme.font("small", "bold"),
             text_color=theme.PAPER,
             anchor="w",
@@ -386,7 +387,7 @@ class ConfigWindow:
 
         ctk.CTkLabel(
             text,
-            text="Cada cuántos segundos se consulta Last.fm.",
+            text=t("Cada cuántos segundos se consulta Last.fm."),
             font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
@@ -420,7 +421,7 @@ class ConfigWindow:
 
         ctk.CTkLabel(
             text,
-            text="Carátulas alternativas",
+            text=t("Carátulas alternativas"),
             font=theme.font("small", "bold"),
             text_color=theme.PAPER,
             anchor="w",
@@ -429,7 +430,7 @@ class ConfigWindow:
 
         ctk.CTkLabel(
             text,
-            text="Deezer y MusicBrainz cuando Last.fm no trae portada.",
+            text=t("Deezer y MusicBrainz cuando Last.fm no trae portada."),
             font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
@@ -453,7 +454,56 @@ class ConfigWindow:
             switch.deselect()
         self._entries["enable_fallback_artwork"] = switch
 
-    def _build_footer(self, parent) -> None:
+        # --- Idioma / Language ---
+        lang_row = ctk.CTkFrame(parent, fg_color="transparent")
+        lang_row.pack(fill="x", pady=(18, 0))
+
+        lang_text = ctk.CTkFrame(lang_row, fg_color="transparent")
+        lang_text.pack(side="left", fill="x", expand=True)
+
+        ctk.CTkLabel(
+            lang_text,
+            text=t("Idioma"),
+            font=theme.font("small", "bold"),
+            text_color=theme.PAPER,
+            anchor="w",
+            height=14,
+        ).pack(fill="x")
+
+        ctk.CTkLabel(
+            lang_text,
+            text=t("Idioma de la interfaz."),
+            font=theme.font("small"),
+            text_color=theme.MUTED,
+            anchor="w",
+            height=14,
+        ).pack(fill="x", pady=(1, 0))
+
+        current_lang = get_language()
+        lang_display = "Español" if current_lang == "es" else "English"
+
+        lang_menu = ctk.CTkOptionMenu(
+            lang_row,
+            values=["Español", "English"],
+            command=self._on_language_change,
+            width=120,
+            font=theme.font("small"),
+            fg_color=theme.PANEL,
+            button_color=theme.BORDER,
+            button_hover_color=theme.HOVER,
+            text_color=theme.PAPER,
+            dropdown_fg_color=theme.PANEL,
+            dropdown_hover_color=theme.HOVER,
+            dropdown_text_color=theme.PAPER,
+        )
+        lang_menu.set(lang_display)
+        lang_menu.pack(side="right", padx=(8, 0))
+        self._entries["language"] = lang_menu
+
+    def _on_language_change(self, value: str) -> None:
+        lang = "es" if value == "Español" else "en"
+        save_language(lang)
+
         self._status_label = ctk.CTkLabel(
             parent,
             text="",
@@ -471,7 +521,7 @@ class ConfigWindow:
 
         self._test_btn = ctk.CTkButton(
             buttons,
-            text="Probar conexión",
+            text=t("Probar conexión"),
             command=self._on_test_connection,
             width=160,
             height=40,
@@ -487,7 +537,7 @@ class ConfigWindow:
 
         self._save_btn = ctk.CTkButton(
             buttons,
-            text="Guardar cambios",
+            text=t("Guardar cambios"),
             command=self._on_save,
             height=40,
             font=theme.font("body", "bold"),
@@ -507,10 +557,10 @@ class ConfigWindow:
             return
         if entry.cget("show") == "*":
             entry.configure(show="")
-            button.configure(text="Ocultar", text_color=theme.ACCENT)
+            button.configure(text=t("Ocultar"), text_color=theme.ACCENT)
         else:
             entry.configure(show="*")
-            button.configure(text="Mostrar", text_color=theme.LABEL)
+            button.configure(text=t("Mostrar"), text_color=theme.LABEL)
 
     def _collect_config(self) -> tuple[dict, Optional[str]]:
         config = self._repo.load()
@@ -523,9 +573,9 @@ class ConfigWindow:
                 try:
                     interval = int(value)
                 except ValueError:
-                    return {}, "El intervalo debe ser un número entero."
+                    return {}, t("El intervalo debe ser un número entero.")
                 if interval < 5:
-                    return {}, "El intervalo mínimo es de 5 segundos."
+                    return {}, t("El intervalo mínimo es de 5 segundos.")
                 config[key] = interval
             else:
                 config[key] = value
@@ -533,14 +583,14 @@ class ConfigWindow:
         missing = [
             label
             for key, label in (
-                ("lastfm_username", "usuario de Last.fm"),
-                ("lastfm_api_key", "API Key"),
-                ("discord_client_id", "Discord Client ID"),
+                ("lastfm_username", t("usuario de Last.fm")),
+                ("lastfm_api_key", t("API Key")),
+                ("discord_client_id", t("Discord Client ID")),
             )
             if not config.get(key)
         ]
         if missing:
-            return {}, "Faltan datos: " + ", ".join(missing) + "."
+            return {}, t("Faltan datos: ") + ", ".join(missing) + "."
         return config, None
 
     def _on_save(self) -> None:
@@ -553,12 +603,12 @@ class ConfigWindow:
             self._repo.save(config)
         except OSError:
             logger.exception("Could not save configuration")
-            self._set_status("No se pudo guardar la configuración.", error=True)
+            self._set_status(t("No se pudo guardar la configuración."), error=True)
             return
 
         self._config = config
         self._saved = True
-        self._set_status("Guardado. Aplicando cambios…", error=False)
+        self._set_status(t("Guardado. Aplicando cambios…"), error=False)
 
         if self._on_save_callback:
             try:
@@ -566,14 +616,14 @@ class ConfigWindow:
             except Exception:
                 logger.exception("The settings-saved callback failed")
                 self._set_status(
-                    "Guardado, pero no se pudo reiniciar Discord.", error=True
+                    t("Guardado, pero no se pudo reiniciar Discord."), error=True
                 )
                 return
             if self._root:
                 self._root.after(
                     1600,
                     lambda: self._set_status(
-                        "Listo. Discord usará estos ajustes.", error=False
+                        t("Listo. Discord usará estos ajustes."), error=False
                     ),
                 )
         else:
@@ -583,8 +633,8 @@ class ConfigWindow:
     def _on_test_connection(self) -> None:
         if not self._test_btn:
             return
-        self._test_btn.configure(state="disabled", text="Probando…")
-        self._set_status("Probando credenciales de Last.fm…", error=False)
+        self._test_btn.configure(state="disabled", text=t("Probando…"))
+        self._set_status(t("Probando credenciales de Last.fm…"), error=False)
 
         def worker() -> None:
             username_widget = self._entries.get("lastfm_username")
@@ -601,7 +651,7 @@ class ConfigWindow:
             )
 
             if not username or not api_key:
-                self._post(lambda: self._finish_test("Usuario y API Key son obligatorios.", True))
+                self._post(lambda: self._finish_test(t("Usuario y API Key son obligatorios."), True))
                 return
 
             try:
@@ -619,23 +669,23 @@ class ConfigWindow:
                 if response.status_code != 200:
                     self._post(
                         lambda: self._finish_test(
-                            f"Last.fm respondió HTTP {response.status_code}.", True
+                            f"{t('Last.fm respondió HTTP')} {response.status_code}.", True
                         )
                     )
                     return
                 payload = response.json()
                 if "error" in payload:
-                    message = str(payload.get("message") or "Credenciales rechazadas.")
-                    self._post(lambda: self._finish_test(f"Last.fm: {message}", True))
+                    message = str(payload.get("message") or t("Credenciales rechazadas."))
+                    self._post(lambda: self._finish_test(f"{t('Last.fm: ')}{message}", True))
                 else:
                     self._post(
-                        lambda: self._finish_test("Conexión correcta con Last.fm.", False)
+                        lambda: self._finish_test(t("Conexión correcta con Last.fm."), False)
                     )
             except httpx.TimeoutException:
-                self._post(lambda: self._finish_test("Last.fm tardó demasiado en responder.", True))
+                self._post(lambda: self._finish_test(t("Last.fm tardó demasiado en responder."), True))
             except Exception:
                 logger.exception("Connection test failed")
-                self._post(lambda: self._finish_test("No se pudo conectar con Last.fm.", True))
+                self._post(lambda: self._finish_test(t("No se pudo conectar con Last.fm."), True))
 
         threading.Thread(target=worker, daemon=True, name="ConfigTest").start()
 
@@ -644,7 +694,7 @@ class ConfigWindow:
         if self._test_btn:
             self._test_btn.configure(
                 state="normal",
-                text="Probar conexión",
+                text=t("Probar conexión"),
             )
 
     def _post(self, callback) -> None:

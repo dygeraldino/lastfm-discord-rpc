@@ -17,6 +17,7 @@ from src.application.use_cases.sync_presence import SyncPresenceUseCase
 from src.daemon.runner import DaemonRunner
 from src.daemon.signal_handler import DaemonSignalHandler
 from src.infrastructure.persistence.json_config_repository import JsonConfigRepository
+from src.presentation.gui.locale import load_language
 from src.presentation.gui.tray_app import run_tray_app
 from src.presentation.gui.main_window import run_config_window
 
@@ -116,6 +117,7 @@ def main() -> None:
 
     logger.info("Configuration valid, starting tray app")
     reload_settings()
+    load_language()
     _start_tray()
 
 

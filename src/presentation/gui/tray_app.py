@@ -16,6 +16,7 @@ from PIL import Image, ImageDraw
 
 from config.logging_config import get_logger, get_logs_dir
 from src.infrastructure.persistence.json_config_repository import JsonConfigRepository
+from src.presentation.gui.locale import t
 from src.presentation.gui.main_window import run_config_window
 from src.presentation.gui.player_window import PlayerWindow, run_player_window
 
@@ -111,22 +112,22 @@ class TrayApp:
 
         menu = pystray.Menu(
             pystray.MenuItem(
-                "Abrir reproductor",
+                t("Abrir reproductor"),
                 self._on_player_click,
                 default=True,
             ),
-            pystray.MenuItem("Ajustes", self._on_config_click),
-            pystray.MenuItem("Abrir logs", self._on_open_logs),
+            pystray.MenuItem(t("Ajustes"), self._on_config_click),
+            pystray.MenuItem(t("Abrir logs"), self._on_open_logs),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Buscar actualizaciones", self._on_check_updates),
+            pystray.MenuItem(t("Buscar actualizaciones"), self._on_check_updates),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem("Salir", self._on_exit),
+            pystray.MenuItem(t("Salir"), self._on_exit),
         )
 
         self._icon = pystray.Icon(
             "LastfmPresence",
             icon_image,
-            "LastfmPresence - Reproductor de Last.fm",
+            t("LastfmPresence - Reproductor de Last.fm"),
             menu,
         )
 

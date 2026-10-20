@@ -90,6 +90,14 @@ List in `build.py`. Add new internal modules here if import errors occur in buil
 - Windows only (Win32 mutex, Inno Setup, APPDATA paths)
 - Dependencies in `requirements.txt`
 
+## Localization
+
+The UI is bilingual: Spanish (default) and English. All user-facing strings are wrapped
+with `t()` from `src/presentation/gui/locale.py`. The selected language is persisted in
+`%APPDATA%\LastfmPresence\config.json` under the `language` key (`es` or `en`) and can be
+changed from the **Idioma / Language** dropdown in Ajustes. Adding a new language means
+adding a new entry to `TRANSLATIONS` in `locale.py`.
+
 ## Key Files to Know
 
 | File                                                       | Purpose                                   |
