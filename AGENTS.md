@@ -134,10 +134,10 @@ When Last.fm returns a track without artwork (or returns Last.fm default placeho
 The player (**Abrir reproductor** from the tray, or a click on the tray icon) lets the user pick the artwork source for the song currently shown under **Carátula**:
 
 - **Identity**: `artist + title` (album is ignored, so live/remaster variants share the override)
-- **Sources**: Last.fm base image, Deezer, or MusicBrainz/Cover Art Archive
-- **Preview**: Three source tiles with thumbnails; missing candidates are disabled
-- **Storage**: `%APPDATA%\LastfmPresence\song_overrides.json` (`{source, url}` per slugified `artist:title` key)
+- **Sources**: Last.fm base image, Deezer, MusicBrainz/Cover Art Archive, and **"Sin portada"** (shows the app logo in the player and sends no image to Discord)
+- **Preview**: Four source tiles with thumbnails; missing candidates are disabled
+- **Storage**: `%APPDATA%\LastfmPresence\song_overrides.json` (`{source, url}` per slugified `artist:title` key; `url` is null for `"none"`)
 - **Precedence**: An override wins over the normal pipeline; without an override the fallback flow is untouched
-- **Runtime**: `OverrideAwareMusicProvider` wraps `LastFmClient` and re-reads the override file on every poll, so edits apply to the next detected track change
+- **Runtime**: `OverrideAwareMusicProvider` wraps `LastFmClient` and re-reads the override file on every poll, so edits apply to the next detected track change; selecting "Sin portada" sets `artwork_url=None` so Discord shows no image
 - **Removal**: "Quitar" in the player, or the footer manager listing every saved override
-- **No local files**: Only online URLs are used (Discord Rich Presence requires a reachable image URL)
+- **No local files**: Only online URLs are used (Discord Rich Presence requires a reachable image URL); "Sin portada" is the exception and shows no image anywhere

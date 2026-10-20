@@ -35,7 +35,8 @@ A local tray daemon that reads public Last.fm scrobbles, repairs missing or wron
 - Polls Last.fm on an interval; no playback control, seek, volume or queue management.
 - Discord Rich Presence only accepts reachable online image URLs, never local files.
 - Fallback artwork: persistent cache → Deezer → MusicBrainz/Cover Art Archive.
-- Per-song overrides choose between Last.fm base, Deezer and MusicBrainz; stored at `%APPDATA%\LastfmPresence\song_overrides.json`.
+- Per-song overrides choose between Last.fm base, Deezer, MusicBrainz or
+  "Sin portada" (no artwork sent to Discord); stored at `%APPDATA%\LastfmPresence\song_overrides.json`.
 - The player window shows the current track plus a short recent-history list from Last.fm.
 - Closing the player hides it to the tray; the daemon keeps running. First run opens configuration because there are no credentials yet.
 - Configuration opens from a gear in the player; the tray also exposes it.

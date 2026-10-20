@@ -46,6 +46,10 @@ ring or tint is paired with a word.
   track title 30 bold, section headings 11–12 bold.
 - Body: **Segoe UI** — artist 15, labels 10–12 bold, meta 8–10.
 
+Named scale (theme.py `font()` accepts a token name): `tiny` 10, `small` 11,
+`body` 13, `display` 16, `display-lg` 21. Nothing readable drops below 10 px;
+body text sits at 13 px for a desktop app viewed at arm's length.
+
 ## Layout rhythm
 
 - Outer padding 28–32px; sections separated by 1px hairlines
@@ -68,7 +72,9 @@ ring or tint is paired with a word.
   `LABEL` text, `HOVER` fill on hover; icons ride left at 11–13px.
 - **Source tile**: thumb radius 7; selected = 2px `ACCENT` border,
   `HOVER` fill, 9px check icon; unavailable = `INK` fill, "Sin portada",
-  label `MUTED`, no cursor affordance.
+  label `MUTED`, no cursor affordance. A fourth "Sin portada" tile (showing
+  the app logo) is always available so the user can opt out of artwork for a
+  song entirely; selecting it sends no image to Discord.
 - **Shelf tile**: tiles show the truth per track — the currently playing
   track mirrors whichever source the picker has chosen, the rest show their
   per-song override's URL when one exists (else the Last.fm base image).

@@ -130,12 +130,16 @@ Use the gear in the player header to open **Ajustes** (or **Ajustes** in the tra
 
 ### Per-Song Artwork
 
-Open the player, find the track under **Carátula**, preview the artwork available from Last.fm, Deezer and MusicBrainz, choose one, and press **Guardar carátula**. The choice is stored in `%APPDATA%\LastfmPresence\song_overrides.json` and applied whenever that `artist + title` plays. The footer link lists every saved override so you can remove them.
+Open the player, find the track under **Carátula**, preview the artwork available from Last.fm, Deezer, MusicBrainz **and the app logo ("Sin portada")**, choose one, and press **Guardar carátula**. The choice is stored in `%APPDATA%\LastfmPresence\song_overrides.json` and applied whenever that `artist + title` plays. The footer link lists every saved override so you can remove them.
 
-- Overrides take precedence over the automatic fallback pipeline.
-- Songs without an override keep using the normal flow.
-- Use **Quitar** to delete an override and return the song to automatic artwork.
-- Only online image URLs are used, since Discord Rich Presence cannot display local files.
+- **Identity**: `artist + title` (album is ignored, so live/remaster variants share the override)
+- **Sources**: Last.fm base image, Deezer, MusicBrainz/Cover Art Archive, and **"Sin portada"** (shows the app logo in both the player and Discord; no image is sent to Discord)
+- **Preview**: Four source tiles with thumbnails; missing candidates are disabled
+- **Storage**: `%APPDATA%\LastfmPresence\song_overrides.json` (`{source, url}` per slugified `artist:title` key; `url` is null for "Sin portada")
+- **Precedence**: An override wins over the normal pipeline; without an override the fallback flow is untouched
+- **Runtime**: `OverrideAwareMusicProvider` re-reads the override file on every poll, so edits apply to the next detected track change; selecting "Sin portada" sends no `large_image` to Discord
+- **Removal**: "Quitar" in the player, or the footer manager listing every saved override
+- **No local files**: Only online URLs are used (Discord Rich Presence requires a reachable image URL); "Sin portada" is the exception and shows no image anywhere
 
 ## Testing
 
