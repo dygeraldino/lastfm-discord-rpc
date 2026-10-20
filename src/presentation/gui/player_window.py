@@ -941,7 +941,7 @@ class PlayerWindow:
             self._updated_label.configure(text=t("Actualizando…"))
         elif self._last_updated is not None:
             relative = theme.format_relative_time(int(self._last_updated.timestamp()))
-            self._updated_label.configure(text=f"Actualizado {relative}")
+            self._updated_label.configure(text=f"{t('Actualizado')} {relative}")
         else:
             self._updated_label.configure(text="")
 
@@ -952,9 +952,9 @@ class PlayerWindow:
 
         if count:
             label = (
-                "1 carátula personalizada"
+                t("1 carátula personalizada")
                 if count == 1
-                else f"{count} carátulas personalizadas"
+                else t("{count} carátulas personalizadas", count=count)
             )
             self._overrides_btn.configure(text=label, state="normal", text_color=theme.ACCENT)
         else:

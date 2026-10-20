@@ -113,6 +113,10 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "Conexión correcta con Last.fm.": "Connection to Last.fm successful.",
         "Last.fm tardó demasiado en responder.": "Last.fm took too long to respond.",
         "No se pudo conectar con Last.fm.": "Could not connect to Last.fm.",
+        "Ahora": "Now",
+        "Actualizado": "Updated",
+        "1 carátula personalizada": "1 custom cover",
+        "{count} carátulas personalizadas": "{count} custom covers",
         # --- Relative time (theme.py) ---
         "hace un momento": "just now",
         "hace {minutes} min": "{minutes} min ago",

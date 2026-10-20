@@ -177,7 +177,7 @@ class ConfigWindow:
             side="bottom", fill="x"
         )
 
-        body = ctk.CTkFrame(root, fg_color="transparent")
+        body = ctk.CTkScrollableFrame(root, fg_color="transparent")
         body.pack(fill="both", expand=True, padx=32, pady=(20, 0))
         self._build_form(body)
 
