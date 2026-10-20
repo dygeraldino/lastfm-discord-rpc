@@ -504,6 +504,7 @@ class ConfigWindow:
         lang = "es" if value == "Español" else "en"
         save_language(lang)
 
+    def _build_footer(self, parent) -> None:
         self._status_label = ctk.CTkLabel(
             parent,
             text="",
