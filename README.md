@@ -119,13 +119,13 @@ If you enable **"Hide recent listening information"** in your [Last.fm Privacy S
 | `discord_client_id`            | _required_ | Discord Application Client ID                      |
 | `poll_interval`                | `30`       | Seconds between Last.fm polls                      |
 | `log_level`                    | `INFO`     | Log level (DEBUG, INFO, WARNING, ERROR)            |
-| `language`                     | `es`       | Interface language: `es` (Spanish) or `en` (English) |
+| `language`                     | `en`       | Interface language: `es` (Spanish) or `en` (English) |
 | `enable_rich_presence_buttons` | `true`     | Show "Listen on Last.fm" and "View Artist" buttons |
 | `enable_fallback_artwork`      | `true`     | Enable Deezer & MusicBrainz fallback artwork lookup|
 
 ### Language
 
-The interface is available in **Spanish** (default) and **English**. Change it from the
+The interface is available in **English** (default) and **Spanish**. Change it from the
 **Ajustes / Settings** window under the **Idioma / Language** dropdown. The choice is
 saved in `%APPDATA%\LastfmPresence\config.json` and applied immediately to the settings
 window; other surfaces pick it up on the next launch.

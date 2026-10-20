@@ -53,7 +53,7 @@ class Settings(BaseSettings):
     discord_client_id: str = ""
     poll_interval: int = 30
     log_level: str = "INFO"
-    language: str = "es"
+    language: str = "en"
     enable_rich_presence_buttons: bool = True
     enable_fallback_artwork: bool = True
 

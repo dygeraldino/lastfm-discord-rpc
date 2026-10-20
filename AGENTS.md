@@ -92,7 +92,7 @@ List in `build.py`. Add new internal modules here if import errors occur in buil
 
 ## Localization
 
-The UI is bilingual: Spanish (default) and English. All user-facing strings are wrapped
+The UI is bilingual: English (default) and Spanish. All user-facing strings are wrapped
 with `t()` from `src/presentation/gui/locale.py`. The selected language is persisted in
 `%APPDATA%\LastfmPresence\config.json` under the `language` key (`es` or `en`) and can be
 changed from the **Idioma / Language** dropdown in Ajustes. Adding a new language means
