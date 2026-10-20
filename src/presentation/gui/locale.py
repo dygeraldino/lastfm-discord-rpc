@@ -72,6 +72,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "Todavía no has personalizado ninguna carátula.": "You haven't customized any cover yet.",
         "0 personalizadas": "0 custom",
         "1 personalizada": "1 custom",
+        "{count} personalizadas": "{count} custom",
         # --- Settings window ---
         "LastfmPresence - Ajustes": "LastfmPresence - Settings",
         "Ajustes": "Settings",
@@ -90,6 +91,8 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "Cada cuántos segundos se consulta Last.fm.": "How many seconds between Last.fm polls.",
         "Carátulas alternativas": "Alternative covers",
         "Deezer y MusicBrainz cuando Last.fm no trae portada.": "Deezer and MusicBrainz when Last.fm has no cover.",
+        "Idioma": "Language",
+        "Idioma de la interfaz.": "Interface language.",
         "Probar conexión": "Test connection",
         "Guardar cambios": "Save changes",
         "Ocultar": "Hide",
@@ -97,6 +100,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "El intervalo debe ser un número entero.": "The interval must be a whole number.",
         "El intervalo mínimo es de 5 segundos.": "The minimum interval is 5 seconds.",
         "Faltan datos:": "Missing data:",
+        "Faltan datos: ": "Missing data: ",
         "usuario de Last.fm": "Last.fm user",
         "API Key": "API Key",
         "Discord Client ID": "Discord Client ID",
@@ -107,14 +111,17 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "Probando…": "Testing…",
         "Probando credenciales de Last.fm…": "Testing Last.fm credentials…",
         "Usuario y API Key son obligatorios.": "Username and API Key are required.",
+        "Last.fm respondió HTTP": "Last.fm responded HTTP",
         "Last.fm respondió HTTP {status}.": "Last.fm responded HTTP {status}.",
         "Credenciales rechazadas.": "Credentials rejected.",
+        "Last.fm: ": "Last.fm: ",
         "Last.fm: {message}": "Last.fm: {message}",
         "Conexión correcta con Last.fm.": "Connection to Last.fm successful.",
         "Last.fm tardó demasiado en responder.": "Last.fm took too long to respond.",
         "No se pudo conectar con Last.fm.": "Could not connect to Last.fm.",
         "Ahora": "Now",
         "Actualizado": "Updated",
+        "Aún no hay reproducciones.": "No plays yet.",
         "1 carátula personalizada": "1 custom cover",
         "{count} carátulas personalizadas": "{count} custom covers",
         # --- Relative time (theme.py) ---
@@ -134,6 +141,18 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
 _current_lang: str = "es"
 
 
+def normalize_language(lang: Optional[str]) -> str:
+    """Normalize language code/name to 'es' or 'en'."""
+    if not lang:
+        return "es"
+    clean = str(lang).strip().lower()
+    if clean in ("en", "english", "inglés", "ingles"):
+        return "en"
+    if clean in ("es", "español", "espanol", "spanish"):
+        return "es"
+    return "es"
+
+
 def get_language() -> str:
     """Return the currently active language code."""
     return _current_lang
@@ -142,8 +161,7 @@ def get_language() -> str:
 def set_language(lang: str) -> None:
     """Set the active language code."""
     global _current_lang
-    if lang in TRANSLATIONS:
-        _current_lang = lang
+    _current_lang = normalize_language(lang)
 
 
 def load_language() -> str:
@@ -153,8 +171,7 @@ def load_language() -> str:
         repo = JsonConfigRepository()
         config = repo.load()
         lang = config.get("language", "es")
-        if lang in TRANSLATIONS:
-            _current_lang = lang
+        _current_lang = normalize_language(lang)
     except Exception:
         _current_lang = "es"
     return _current_lang
@@ -162,14 +179,15 @@ def load_language() -> str:
 
 def save_language(lang: str) -> None:
     """Persist the language preference to config and activate it."""
+    norm = normalize_language(lang)
     try:
         repo = JsonConfigRepository()
         config = repo.load()
-        config["language"] = lang
+        config["language"] = norm
         repo.save(config)
-        set_language(lang)
     except Exception:
         pass
+    set_language(norm)
 
 
 def t(spanish_text: str, **kwargs) -> str:

@@ -222,4 +222,5 @@ __marimo__/
 # Agent skills tooling
 .agents/
 .claude/
+.impeccable/
 skills-lock.json

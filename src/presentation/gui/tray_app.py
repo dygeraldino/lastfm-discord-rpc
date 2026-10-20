@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw
 
 from config.logging_config import get_logger, get_logs_dir
 from src.infrastructure.persistence.json_config_repository import JsonConfigRepository
-from src.presentation.gui.locale import load_language, t
+from src.presentation.gui.locale import get_language, load_language, t
 from src.presentation.gui.main_window import run_config_window
 from src.presentation.gui.player_window import PlayerWindow, run_player_window
 
@@ -172,21 +172,38 @@ class TrayApp:
             name="ConfigWindow",
         ).start()
 
+    def _update_tray_menu(self) -> None:
+        if not self._icon:
+            return
+        try:
+            self._icon.title = t("LastfmPresence - Reproductor de Last.fm")
+            self._icon.menu = pystray.Menu(
+                pystray.MenuItem(
+                    t("Abrir reproductor"),
+                    self._on_player_click,
+                    default=True,
+                ),
+                pystray.MenuItem(t("Ajustes"), self._on_config_click),
+                pystray.MenuItem(t("Abrir logs"), self._on_open_logs),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem(t("Buscar actualizaciones"), self._on_check_updates),
+                pystray.Menu.SEPARATOR,
+                pystray.MenuItem(t("Salir"), self._on_exit),
+            )
+            self._icon.update_menu()
+        except Exception as e:
+            logger.warning(f"Could not update tray menu: {e}")
+
     def _on_config_saved(self) -> None:
         logger.info("Config saved, restarting daemon...")
         from config.settings import reload_settings
 
-        old_lang = get_language()
         reload_settings()
         new_lang = load_language()
         self._restart_daemon_thread()
+        self._update_tray_menu()
         PlayerWindow.request_refresh()
-
-        if old_lang != new_lang and PlayerWindow._instance is not None:
-            # Language changed: close the player safely and reopen it so the UI
-            # strings are redrawn in the new language.
-            PlayerWindow.request_close()
-            threading.Timer(1.0, self._show_player).start()
+        PlayerWindow.request_language_change(new_lang)
 
     def _on_open_logs(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         logs_dir = get_logs_dir()

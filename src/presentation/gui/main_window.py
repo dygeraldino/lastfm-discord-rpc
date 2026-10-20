@@ -87,7 +87,7 @@ class ConfigWindow:
     def _open_standalone(self) -> bool:
         window = ctk.CTk()
         self._root = window
-        window.title("LastfmPresence - Ajustes")
+        window.title(t("LastfmPresence - Ajustes"))
         window.geometry("620x640")
         window.resizable(False, False)
         window.configure(fg_color=theme.INK)
@@ -108,7 +108,7 @@ class ConfigWindow:
             return
         window = ctk.CTkToplevel(master)
         self._root = window
-        window.title("LastfmPresence - Ajustes")
+        window.title(t("LastfmPresence - Ajustes"))
         window.geometry("620x640")
         window.resizable(False, False)
         window.configure(fg_color=theme.INK)
@@ -501,8 +501,33 @@ class ConfigWindow:
         self._entries["language"] = lang_menu
 
     def _on_language_change(self, value: str) -> None:
-        lang = "es" if value == "Español" else "en"
+        lang = "en" if value in ("English", "en") else "es"
         save_language(lang)
+        self._refresh_ui_language()
+        from src.presentation.gui.player_window import PlayerWindow
+        PlayerWindow.request_language_change(lang)
+
+    def _refresh_ui_language(self) -> None:
+        if not self._root:
+            return
+        # Stash current form inputs so user doesn't lose what they entered
+        for key, widget in list(self._entries.items()):
+            if key == "enable_fallback_artwork":
+                self._config[key] = bool(widget.get() == 1)
+            elif key == "language":
+                val = widget.get().strip() if hasattr(widget, "get") else ""
+                self._config[key] = "en" if val in ("English", "en") else "es"
+            elif hasattr(widget, "get"):
+                self._config[key] = widget.get().strip()
+
+        self._entries.clear()
+        self._toggle_btns.clear()
+
+        for child in list(self._root.winfo_children()):
+            child.destroy()
+
+        self._root.title(t("LastfmPresence - Ajustes"))
+        self._build_ui()
 
     def _build_footer(self, parent) -> None:
         self._status_label = ctk.CTkLabel(
@@ -568,6 +593,10 @@ class ConfigWindow:
         for key, widget in self._entries.items():
             if key == "enable_fallback_artwork":
                 config[key] = bool(widget.get() == 1)
+                continue
+            if key == "language":
+                val = widget.get().strip() if hasattr(widget, "get") else ""
+                config[key] = "en" if val in ("English", "en") else "es"
                 continue
             value = widget.get().strip()
             if key == "poll_interval":

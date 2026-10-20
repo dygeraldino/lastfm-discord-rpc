@@ -65,6 +65,7 @@ class PlayerWindow:
     _show_requests: "queue.Queue[bool]" = queue.Queue()
     _refresh_requests: "queue.Queue[bool]" = queue.Queue()
     _config_requests: "queue.Queue[Optional[Callable[[], None]]]" = queue.Queue()
+    _language_requests: "queue.Queue[str]" = queue.Queue()
 
     def __init__(
         self,
@@ -123,6 +124,11 @@ class PlayerWindow:
         return cls._instance is not None
 
     @classmethod
+    def request_language_change(cls, lang: str) -> None:
+        """Ask an existing player window to reload language and rebuild UI."""
+        cls._language_requests.put(lang)
+
+    @classmethod
     def request_close(cls) -> None:
         """Ask an existing player window to close safely from any thread."""
         if cls._instance is not None and cls._instance._root is not None:
@@ -136,6 +142,7 @@ class PlayerWindow:
             PlayerWindow._instance = self
 
         try:
+            load_language()
             self._root = ctk.CTk()
             self._root.title("LastfmPresence")
             self._root.configure(fg_color=theme.INK)
@@ -238,10 +245,59 @@ class PlayerWindow:
                 break
             self._open_config(callback)
 
+        lang_to_apply = None
+        while True:
+            try:
+                lang_to_apply = PlayerWindow._language_requests.get_nowait()
+            except queue.Empty:
+                break
+        if lang_to_apply:
+            self._on_language_changed(lang_to_apply)
+
         try:
             self._root.after(120, self._drain_queues)
         except Exception:
             pass
+
+    def _on_language_changed(self, lang: str) -> None:
+        load_language()
+        self._rebuild_ui()
+
+    def _rebuild_ui(self) -> None:
+        if not self._root:
+            return
+        self._stop_eq()
+        for child in list(self._root.winfo_children()):
+            if isinstance(child, (tk.Toplevel, ctk.CTkToplevel)):
+                continue
+            child.destroy()
+
+        self._build_ui()
+
+        if self._selected is not None:
+            self._set_cover(self._current_cover_pil())
+            self._render_details()
+            self._render_recent()
+            self._render_tiles()
+            self._update_save_state()
+            self._show_cover_section()
+        elif not self._tracks:
+            config = self._config_repo.load()
+            if not config.get("lastfm_username") or not config.get("lastfm_api_key"):
+                self._render_unconfigured()
+            else:
+                self._render_empty()
+        else:
+            self._render_recent()
+
+        self._update_footer()
+
+        if self._manager is not None:
+            try:
+                if self._manager.winfo_exists():
+                    self._manager.update_language()
+            except Exception:
+                pass
 
     def _schedule_poll(self) -> None:
         if not self._root:
@@ -1509,10 +1565,15 @@ class OverrideManager(ctk.CTkToplevel):
         self.configure(fg_color=theme.INK)
         self.transient(master)
         theme.set_window_icon(self)
-        self._build()
-        self._render()
         self.bind("<Escape>", lambda _event: self.destroy())
         self.after(60, self._center_over, master)
+
+    def update_language(self) -> None:
+        self.title(t("LastfmPresence - Carátulas personalizadas"))
+        for child in list(self.winfo_children()):
+            child.destroy()
+        self._build()
+        self._render()
 
     def _build(self) -> None:
         header = ctk.CTkFrame(self, fg_color=theme.INK, corner_radius=0)
