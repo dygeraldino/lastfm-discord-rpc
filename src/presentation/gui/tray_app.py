@@ -16,7 +16,7 @@ from PIL import Image, ImageDraw
 
 from config.logging_config import get_logger, get_logs_dir
 from src.infrastructure.persistence.json_config_repository import JsonConfigRepository
-from src.presentation.gui.locale import t
+from src.presentation.gui.locale import load_language, t
 from src.presentation.gui.main_window import run_config_window
 from src.presentation.gui.player_window import PlayerWindow, run_player_window
 
@@ -177,8 +177,17 @@ class TrayApp:
         from config.settings import reload_settings
 
         reload_settings()
+        load_language()  # Update active language immediately
         self._restart_daemon_thread()
         PlayerWindow.request_refresh()
+
+        # Reopen the player with the new language if it is currently open
+        if PlayerWindow._instance is not None:
+            try:
+                PlayerWindow._instance._root.destroy()
+            except Exception:
+                pass
+            PlayerWindow._instance = None
 
     def _on_open_logs(self, icon: pystray.Icon, item: pystray.MenuItem) -> None:
         logs_dir = get_logs_dir()
