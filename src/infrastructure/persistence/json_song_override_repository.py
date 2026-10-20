@@ -62,10 +62,12 @@ class JsonSongOverrideRepository(SongOverrideRepository):
             artist = str(entry["artist"])
             title = str(entry["title"])
             source = str(entry["source"])
-            url = str(entry["url"])
+            url = entry.get("url")
+            if url is not None:
+                url = str(url)
         except (KeyError, TypeError):
             return None
-        if source not in VALID_SOURCES or not url:
+        if source not in VALID_SOURCES:
             return None
         return SongOverride(artist=artist, title=title, source=source, url=url)
 

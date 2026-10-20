@@ -200,7 +200,7 @@ class ConfigWindow:
         ctk.CTkLabel(
             text,
             text="Ajustes",
-            font=theme.font(21, "bold", display=True),
+            font=theme.font("display-lg", "bold", display=True),
             text_color=theme.PAPER,
             anchor="w",
         ).pack(fill="x")
@@ -218,7 +218,7 @@ class ConfigWindow:
         ctk.CTkLabel(
             text,
             text=subtitle,
-            font=theme.font(10),
+            font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
         ).pack(fill="x", pady=(2, 0))
@@ -229,7 +229,7 @@ class ConfigWindow:
         ctk.CTkLabel(
             parent,
             text="Conexión",
-            font=theme.font(12, "bold", display=True),
+            font=theme.font("body", "bold", display=True),
             text_color=theme.PAPER,
             anchor="w",
         ).pack(fill="x")
@@ -237,7 +237,7 @@ class ConfigWindow:
         ctk.CTkLabel(
             parent,
             text="Last.fm alimenta tu estado; Discord lo muestra.",
-            font=theme.font(9),
+            font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
             height=14,
@@ -270,7 +270,7 @@ class ConfigWindow:
         ctk.CTkLabel(
             parent,
             text="Comportamiento",
-            font=theme.font(12, "bold", display=True),
+            font=theme.font("body", "bold", display=True),
             text_color=theme.PAPER,
             anchor="w",
         ).pack(fill="x")
@@ -278,7 +278,7 @@ class ConfigWindow:
         ctk.CTkLabel(
             parent,
             text="Cómo se actualiza el estado en Discord.",
-            font=theme.font(9),
+            font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
             height=14,
@@ -305,7 +305,7 @@ class ConfigWindow:
         ctk.CTkLabel(
             label_row,
             text=label,
-            font=theme.font(10, "bold"),
+            font=theme.font("small", "bold"),
             text_color=theme.LABEL,
             anchor="w",
             height=14,
@@ -321,7 +321,7 @@ class ConfigWindow:
                 command=lambda target=url: webbrowser.open(target),
                 height=18,
                 width=132,
-                font=theme.font(9),
+                font=theme.font("small"),
                 fg_color="transparent",
                 hover_color=theme.HOVER,
                 text_color=theme.ACCENT,
@@ -337,7 +337,7 @@ class ConfigWindow:
             placeholder_text=label,
             show="*" if secret else "",
             height=38,
-            font=theme.font(12),
+            font=theme.font("body"),
             corner_radius=8,
             fg_color=theme.PANEL,
             border_color=theme.BORDER,
@@ -361,7 +361,7 @@ class ConfigWindow:
                 fg_color="transparent",
                 hover_color=theme.HOVER,
                 corner_radius=8,
-                font=theme.font(10),
+                font=theme.font("small"),
                 text_color=theme.LABEL,
                 command=lambda k=key: self._toggle_secret_visibility(k),
             )
@@ -378,7 +378,7 @@ class ConfigWindow:
         ctk.CTkLabel(
             text,
             text="Intervalo de consulta",
-            font=theme.font(10, "bold"),
+            font=theme.font("small", "bold"),
             text_color=theme.PAPER,
             anchor="w",
             height=14,
@@ -387,7 +387,7 @@ class ConfigWindow:
         ctk.CTkLabel(
             text,
             text="Cada cuántos segundos se consulta Last.fm.",
-            font=theme.font(9),
+            font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
             height=14,
@@ -411,15 +411,6 @@ class ConfigWindow:
         entry.bind("<FocusIn>", lambda _event, w=entry: w.configure(border_color=theme.ACCENT))
         entry.bind("<FocusOut>", lambda _event, w=entry: w.configure(border_color=theme.BORDER))
 
-        ctk.CTkLabel(
-            row,
-            text="s",
-            font=theme.font(9),
-            text_color=theme.MUTED,
-            width=12,
-            height=14,
-        ).pack(side="right")
-
     def _add_fallback_row(self, parent) -> None:
         row = ctk.CTkFrame(parent, fg_color="transparent")
         row.pack(fill="x")
@@ -430,7 +421,7 @@ class ConfigWindow:
         ctk.CTkLabel(
             text,
             text="Carátulas alternativas",
-            font=theme.font(10, "bold"),
+            font=theme.font("small", "bold"),
             text_color=theme.PAPER,
             anchor="w",
             height=14,
@@ -439,7 +430,7 @@ class ConfigWindow:
         ctk.CTkLabel(
             text,
             text="Deezer y MusicBrainz cuando Last.fm no trae portada.",
-            font=theme.font(9),
+            font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
             height=14,
@@ -466,7 +457,7 @@ class ConfigWindow:
         self._status_label = ctk.CTkLabel(
             parent,
             text="",
-            font=theme.font(9),
+            font=theme.font("small"),
             text_color=theme.MUTED,
             wraplength=540,
             anchor="w",
@@ -484,7 +475,7 @@ class ConfigWindow:
             command=self._on_test_connection,
             width=160,
             height=40,
-            font=theme.font(10),
+            font=theme.font("small"),
             fg_color="transparent",
             hover_color=theme.HOVER,
             text_color=theme.LABEL,
@@ -499,7 +490,7 @@ class ConfigWindow:
             text="Guardar cambios",
             command=self._on_save,
             height=40,
-            font=theme.font(11, "bold"),
+            font=theme.font("body", "bold"),
             fg_color=theme.ACCENT,
             hover_color=theme.ACCENT_DEEP,
             text_color=theme.ACCENT_INK,

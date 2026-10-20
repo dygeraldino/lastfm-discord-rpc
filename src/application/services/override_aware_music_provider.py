@@ -27,11 +27,17 @@ class OverrideAwareMusicProvider(MusicProvider):
             return None
 
         override = self._overrides.get(track.artist, track.title)
-        if override and override.url:
-            logger.debug(
-                f"Applying artwork override ({override.source}) for {track.display_name}"
-            )
-            return replace(track, artwork_url=override.url)
+        if override:
+            if override.source == "none":
+                logger.debug(
+                    f"Applying artwork override (none) for {track.display_name}"
+                )
+                return replace(track, artwork_url=None)
+            if override.url:
+                logger.debug(
+                    f"Applying artwork override ({override.source}) for {track.display_name}"
+                )
+                return replace(track, artwork_url=override.url)
 
         return track
 

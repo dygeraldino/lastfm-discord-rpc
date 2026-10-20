@@ -49,6 +49,22 @@ SUCCESS = ACCENT
 FONT_DISPLAY = "Bahnschrift"
 FONT_BODY = "Segoe UI"
 
+# Named type scale (px). This is a desktop utility read at arm's length, so
+# nothing drops below 10 px and primary text sits at a comfortable 13 px.
+SIZE_TINY = 10    # footnotes, meta
+SIZE_SMALL = 11   # labels, captions, secondary text
+SIZE_BODY = 13    # primary readable text, inputs, buttons
+SIZE_DISPLAY = 16  # section headers, app name
+SIZE_DISPLAY_LG = 21  # window titles
+
+_TYPE_SCALE = {
+    "tiny": SIZE_TINY,
+    "small": SIZE_SMALL,
+    "body": SIZE_BODY,
+    "display": SIZE_DISPLAY,
+    "display-lg": SIZE_DISPLAY_LG,
+}
+
 
 # Assets -------------------------------------------------------------------
 def assets_dir() -> Path:
@@ -81,7 +97,9 @@ def set_window_icon(window) -> None:
         pass
 
 
-def font(size: int, weight: str = "normal", display: bool = False) -> ctk.CTkFont:
+def font(size, weight: str = "normal", display: bool = False) -> ctk.CTkFont:
+    if isinstance(size, str):
+        size = _TYPE_SCALE[size]
     return ctk.CTkFont(
         family=FONT_DISPLAY if display else FONT_BODY,
         size=size,

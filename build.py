@@ -1,9 +1,41 @@
 import sys
 import os
+import stat
 import shutil
 import subprocess
 from pathlib import Path
 from PIL import Image, ImageDraw
+
+
+def _force_remove(path: Path) -> None:
+    """Remove a file, making it writable first if it's read-only/locked."""
+    try:
+        path.chmod(stat.S_IWRITE)
+    except Exception:
+        pass
+    try:
+        path.unlink()
+    except PermissionError:
+        # File is locked by another process; leave it in place.
+        print(f"Advertencia: no se pudo borrar '{path}' (está en uso por otro proceso).")
+
+
+def _force_rmtree(path: Path) -> None:
+    """Remove a directory tree, skipping files that are locked in use."""
+    if not path.exists():
+        return
+    for root, dirs, files in os.walk(path, topdown=False):
+        for name in files:
+            _force_remove(Path(root) / name)
+        for name in dirs:
+            try:
+                Path(root, name).rmdir()
+            except OSError:
+                pass
+    try:
+        path.rmdir()
+    except OSError:
+        pass
 
 
 def generate_icon() -> Path:
@@ -46,9 +78,9 @@ def build_executable() -> None:
     build_dir = project_root / "build"
 
     if dist_dir.exists():
-        shutil.rmtree(dist_dir)
+        _force_rmtree(dist_dir)
     if build_dir.exists():
-        shutil.rmtree(build_dir)
+        _force_rmtree(build_dir)
 
     icon_path = generate_icon()
 
@@ -130,8 +162,14 @@ def build_executable() -> None:
                     break
 
         portable_path = dist_dir / f"LastfmPresence_Portable_v{app_version}.exe"
-        shutil.copy2(exe_path, portable_path)
-        print(f"Portable Executable created: {portable_path}")
+        try:
+            shutil.copy2(exe_path, portable_path)
+            print(f"Portable Executable created: {portable_path}")
+        except PermissionError:
+            print(
+                f"Advertencia: no se pudo crear el portable '{portable_path}' "
+                f"(el archivo existente está en uso por otro proceso)."
+            )
     else:
         print("Error: Executable not found in dist/")
         sys.exit(1)

@@ -35,7 +35,7 @@ from src.presentation.gui import theme
 
 logger = get_logger(__name__)
 
-SOURCE_LABELS = {"base": "Last.fm", "deezer": "Deezer", "musicbrainz": "MusicBrainz"}
+SOURCE_LABELS = {"base": "Last.fm", "deezer": "Deezer", "musicbrainz": "MusicBrainz", "none": "Sin portada"}
 SOURCE_ORDER = ("base", "deezer", "musicbrainz")
 COVER_SIZE = 300
 RECENT_COVER = 72
@@ -315,7 +315,7 @@ class PlayerWindow:
         ctk.CTkLabel(
             inner,
             text="LastfmPresence",
-            font=theme.font(13, "bold", display=True),
+            font=theme.font("display", "bold", display=True),
             text_color=theme.PAPER,
             anchor="w",
         ).pack(side="left")
@@ -361,7 +361,7 @@ class PlayerWindow:
         self._status_label = ctk.CTkLabel(
             status_row,
             text="CONECTANDO",
-            font=theme.font(9, "bold"),
+            font=theme.font("tiny", "bold"),
             text_color=theme.MUTED,
             anchor="w",
             height=14,
@@ -382,7 +382,7 @@ class PlayerWindow:
         self._artist_label = ctk.CTkLabel(
             parent,
             text="",
-            font=theme.font(15),
+            font=theme.font("display"),
             text_color=theme.LABEL,
             anchor="w",
             justify="left",
@@ -393,7 +393,7 @@ class PlayerWindow:
         self._album_label = ctk.CTkLabel(
             parent,
             text=" ",
-            font=theme.font(11),
+            font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
             justify="left",
@@ -424,7 +424,7 @@ class PlayerWindow:
             command=self._open_lastfm,
             height=28,
             width=142,
-            font=theme.font(10),
+            font=theme.font("small"),
             fg_color="transparent",
             hover_color=theme.HOVER,
             text_color=theme.LABEL,
@@ -447,7 +447,7 @@ class PlayerWindow:
         ctk.CTkLabel(
             heading,
             text="Carátula",
-            font=theme.font(10, "bold"),
+            font=theme.font("small", "bold"),
             text_color=theme.LABEL,
             anchor="w",
             height=16,
@@ -456,7 +456,7 @@ class PlayerWindow:
         self._cover_state = ctk.CTkLabel(
             heading,
             text="Automática",
-            font=theme.font(9),
+            font=theme.font("tiny"),
             text_color=theme.MUTED,
             anchor="e",
             height=16,
@@ -475,7 +475,7 @@ class PlayerWindow:
             command=self._save_override,
             width=148,
             height=34,
-            font=theme.font(11, "bold"),
+            font=theme.font("body", "bold"),
             fg_color=theme.ACCENT,
             hover_color=theme.ACCENT_DEEP,
             text_color=theme.ACCENT_INK,
@@ -492,7 +492,7 @@ class PlayerWindow:
             command=self._remove_override,
             width=82,
             height=34,
-            font=theme.font(10),
+            font=theme.font("small"),
             fg_color="transparent",
             hover_color=theme.HOVER,
             text_color=theme.LABEL,
@@ -503,7 +503,7 @@ class PlayerWindow:
         self._save_note = ctk.CTkLabel(
             self._cover_section,
             text="",
-            font=theme.font(9),
+            font=theme.font("tiny"),
             text_color=theme.MUTED,
             anchor="w",
             justify="left",
@@ -527,7 +527,7 @@ class PlayerWindow:
         ctk.CTkLabel(
             header,
             text="Recientes",
-            font=theme.font(11, "bold", display=True),
+            font=theme.font("display", "bold", display=True),
             text_color=theme.LABEL,
             anchor="w",
             height=16,
@@ -539,7 +539,7 @@ class PlayerWindow:
             command=self._return_to_current,
             height=24,
             width=128,
-            font=theme.font(9),
+            font=theme.font("small"),
             fg_color="transparent",
             hover_color=theme.HOVER,
             text_color=theme.ACCENT,
@@ -552,10 +552,10 @@ class PlayerWindow:
         for column in range(SHELF_LIMIT):
             self._shelf.grid_columnconfigure(column, weight=1)
 
-        self._shelf_time_font = theme.font(8)
-        self._shelf_title_font = theme.font(10)
-        self._shelf_artist_font = theme.font(9)
-        self._tile_font = theme.font(9)
+        self._shelf_time_font = theme.font("tiny")
+        self._shelf_title_font = theme.font("small")
+        self._shelf_artist_font = theme.font("tiny")
+        self._tile_font = theme.font("tiny")
         self._render_recent()
 
     def _build_footer(self, parent) -> None:
@@ -569,7 +569,7 @@ class PlayerWindow:
         ctk.CTkLabel(
             inner,
             text="Datos de Last.fm",
-            font=theme.font(9),
+            font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
         ).pack(side="left")
@@ -577,7 +577,7 @@ class PlayerWindow:
         self._updated_label = ctk.CTkLabel(
             inner,
             text="",
-            font=theme.font(9),
+            font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="e",
         )
@@ -589,7 +589,7 @@ class PlayerWindow:
             command=self._open_manager,
             height=24,
             width=200,
-            font=theme.font(9),
+            font=theme.font("small"),
             fg_color="transparent",
             hover_color=theme.HOVER,
             text_color=theme.MUTED,
@@ -790,7 +790,7 @@ class PlayerWindow:
             ctk.CTkLabel(
                 self._shelf,
                 text="Aún no hay reproducciones.",
-                font=theme.font(10),
+                font=theme.font("small"),
                 text_color=theme.MUTED,
                 anchor="w",
             ).grid(row=0, column=0, sticky="w", padx=(2, 0), pady=(2, 0))
@@ -833,8 +833,8 @@ class PlayerWindow:
                 text_color=theme.PAPER,
                 anchor="w",
                 justify="left",
-                wraplength=104,
-                height=28,
+                wraplength=115,
+                height=42,
             )
             title_label.pack(fill="x", padx=7)
 
@@ -845,8 +845,8 @@ class PlayerWindow:
                 text_color=theme.MUTED,
                 anchor="w",
                 justify="left",
-                wraplength=104,
-                height=14,
+                wraplength=115,
+                height=22,
             )
             artist_label.pack(fill="x", padx=7, pady=(0, 6))
 
@@ -863,6 +863,8 @@ class PlayerWindow:
             and track.key == self._selected.key
             and self._choice
         ):
+            if self._choice == "none":
+                return theme.app_icon_pil(RECENT_COVER)
             image = self._candidate_images.get(self._choice)
             if image is not None:
                 return image
@@ -870,6 +872,8 @@ class PlayerWindow:
 
     def _current_cover_pil(self) -> Optional[Image.Image]:
         if self._choice:
+            if self._choice == "none":
+                return theme.app_icon_pil(COVER_SIZE)
             image = self._candidate_images.get(self._choice)
             if image is not None:
                 return image
@@ -1083,7 +1087,7 @@ class PlayerWindow:
         ctk.CTkLabel(
             self._tiles_host,
             text="Buscando carátulas en Deezer y MusicBrainz…",
-            font=theme.font(9),
+            font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
         ).pack(anchor="w", pady=(2, 6))
@@ -1128,6 +1132,9 @@ class PlayerWindow:
         if self._override is not None and self._override.source in available:
             self._choice = self._override.source
             return
+        if self._override is not None and self._override.source == "none":
+            self._choice = "none"
+            return
         self._choice = available[0] if available else None
 
     # ---------------------------------------------------------------- tiles --
@@ -1135,20 +1142,18 @@ class PlayerWindow:
         for child in self._tiles_host.winfo_children():
             child.destroy()
 
-        if not self._candidates:
-            ctk.CTkLabel(
-                self._tiles_host,
-                text="Sin carátulas disponibles.",
-                font=theme.font(9),
-                text_color=theme.MUTED,
-                anchor="w",
-            ).pack(anchor="w", pady=(2, 4))
-            return
+        # Siempre se ofrece la opción de no usar portada (se muestra el logo de la app)
+        sources = list(SOURCE_ORDER) + ["none"]
 
-        for source in SOURCE_ORDER:
-            url = self._candidates.get(source)
-            enabled = bool(url)
-            selected = enabled and self._choice == source
+        for source in sources:
+            if source == "none":
+                enabled = True
+                url = None
+                selected = self._choice == "none"
+            else:
+                url = self._candidates.get(source)
+                enabled = bool(url)
+                selected = enabled and self._choice == source
 
             tile = ctk.CTkFrame(
                 self._tiles_host,
@@ -1159,7 +1164,34 @@ class PlayerWindow:
             )
             tile.pack(side="left", padx=(0, 10))
 
-            if enabled:
+            cover = None
+            if source == "none":
+                logo_pil = theme.app_icon_pil(TILE_COVER)
+                if logo_pil is not None:
+                    image = theme.pil_to_ctk(
+                        theme.square_cover(logo_pil, TILE_COVER, 7),
+                        (TILE_COVER, TILE_COVER),
+                    )
+                    cover = ctk.CTkLabel(tile, text="", image=image)
+                    cover.pack(padx=4, pady=(4, 0))
+                else:
+                    empty = ctk.CTkFrame(
+                        tile,
+                        width=TILE_COVER,
+                        height=TILE_COVER,
+                        fg_color=theme.INK,
+                        corner_radius=6,
+                    )
+                    empty.pack(padx=4, pady=(4, 0))
+                    empty.pack_propagate(False)
+                    ctk.CTkLabel(
+                        empty,
+                        text="Sin\nportada",
+                        font=theme.font("tiny"),
+                        text_color=theme.MUTED,
+                        justify="center",
+                    ).pack(expand=True)
+            elif enabled:
                 image = theme.pil_to_ctk(
                     theme.square_cover(self._candidate_images.get(source), TILE_COVER, 7),
                     (TILE_COVER, TILE_COVER),
@@ -1179,7 +1211,7 @@ class PlayerWindow:
                 ctk.CTkLabel(
                     empty,
                     text="Sin\nportada",
-                    font=theme.font(8),
+                    font=theme.font("tiny"),
                     text_color=theme.MUTED,
                     justify="center",
                 ).pack(expand=True)
@@ -1187,18 +1219,23 @@ class PlayerWindow:
             label_row = ctk.CTkFrame(tile, fg_color="transparent")
             label_row.pack(fill="x", padx=5, pady=(4, 5))
 
+            if source == "none":
+                text_color = theme.ACCENT if selected else theme.LABEL
+            else:
+                text_color = theme.ACCENT if selected else (theme.LABEL if enabled else theme.MUTED)
+
             label = ctk.CTkLabel(
                 label_row,
                 text=SOURCE_LABELS[source],
                 font=self._tile_font,
-                text_color=theme.ACCENT if selected else (theme.LABEL if enabled else theme.MUTED),
+                text_color=text_color,
                 anchor="w",
                 height=14,
             )
             label.pack(side="left")
 
             widgets = [tile, label_row, label]
-            if enabled:
+            if cover is not None:
                 widgets.append(cover)
                 if selected:
                     check = ctk.CTkLabel(
@@ -1209,18 +1246,19 @@ class PlayerWindow:
                     )
                     check.pack(side="right")
                     widgets.append(check)
-                for widget in widgets:
-                    widget.bind(
-                        "<Button-1>",
-                        lambda _event, s=source: self._select_source(s),
-                    )
-                    try:
-                        widget.configure(cursor="hand2")
-                    except Exception:
-                        pass
+
+            for widget in widgets:
+                widget.bind(
+                    "<Button-1>",
+                    lambda _event, s=source: self._select_source(s),
+                )
+                try:
+                    widget.configure(cursor="hand2")
+                except Exception:
+                    pass
 
     def _select_source(self, source: str) -> None:
-        if not self._candidates.get(source):
+        if source != "none" and not self._candidates.get(source):
             return
         self._choice = source
         self._render_tiles()
@@ -1230,7 +1268,7 @@ class PlayerWindow:
         self._clear_note()
 
     def _update_save_state(self) -> None:
-        url = self._candidates.get(self._choice) if self._choice else None
+        url = None if self._choice == "none" else self._candidates.get(self._choice)
         override = self._override
         saved = bool(
             override is not None
@@ -1245,7 +1283,7 @@ class PlayerWindow:
                 fg_color=theme.ELEVATED,
                 text_color=theme.ACCENT,
             )
-        elif url:
+        elif self._choice == "none" or url:
             self._save_btn.configure(
                 text="Guardar carátula",
                 state="normal",
@@ -1273,8 +1311,8 @@ class PlayerWindow:
         track = self._selected
         if track is None or not self._choice:
             return
-        url = self._candidates.get(self._choice)
-        if not url:
+        url = None if self._choice == "none" else self._candidates.get(self._choice)
+        if self._choice != "none" and not url:
             return
 
         try:
@@ -1295,7 +1333,10 @@ class PlayerWindow:
         self._set_cover(self._current_cover_pil())
         self._render_recent()
         self._update_save_state()
-        self._note("Guardada. Discord la usará cuando cambie la pista.")
+        if self._choice == "none":
+            self._note("Sin portada. Se usará el logo de la app.")
+        else:
+            self._note("Guardada. Discord la usará cuando cambie la pista.")
         self._update_footer()
 
     def _remove_override(self) -> None:
@@ -1473,7 +1514,7 @@ class OverrideManager(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text="Carátulas personalizadas",
-            font=theme.font(18, "bold", display=True),
+            font=theme.font("display-lg", "bold", display=True),
             text_color=theme.PAPER,
             anchor="w",
         ).pack(fill="x")
@@ -1481,7 +1522,7 @@ class OverrideManager(ctk.CTkToplevel):
         ctk.CTkLabel(
             header,
             text="Se aplican cuando suena cada canción.",
-            font=theme.font(10),
+            font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
         ).pack(fill="x", pady=(3, 0))
@@ -1505,7 +1546,7 @@ class OverrideManager(ctk.CTkToplevel):
         self._count_label = ctk.CTkLabel(
             footer,
             text="",
-            font=theme.font(9),
+            font=theme.font("small"),
             text_color=theme.MUTED,
             anchor="w",
         )
@@ -1517,7 +1558,7 @@ class OverrideManager(ctk.CTkToplevel):
             command=self.destroy,
             width=86,
             height=32,
-            font=theme.font(10),
+            font=theme.font("small"),
             fg_color="transparent",
             hover_color=theme.HOVER,
             text_color=theme.LABEL,
@@ -1540,7 +1581,7 @@ class OverrideManager(ctk.CTkToplevel):
             ctk.CTkLabel(
                 self._list,
                 text="Todavía no has personalizado ninguna carátula.",
-                font=theme.font(10),
+                font=theme.font("small"),
                 text_color=theme.MUTED,
                 wraplength=320,
                 justify="center",
@@ -1564,7 +1605,7 @@ class OverrideManager(ctk.CTkToplevel):
             ctk.CTkLabel(
                 text,
                 text=override.title,
-                font=theme.font(10, "bold"),
+                font=theme.font("body", "bold"),
                 text_color=theme.PAPER,
                 anchor="w",
                 justify="left",
@@ -1574,7 +1615,7 @@ class OverrideManager(ctk.CTkToplevel):
             ctk.CTkLabel(
                 text,
                 text=f"{override.artist} · {SOURCE_LABELS.get(override.source, override.source)}",
-                font=theme.font(9),
+                font=theme.font("small"),
                 text_color=theme.MUTED,
                 anchor="w",
                 justify="left",
